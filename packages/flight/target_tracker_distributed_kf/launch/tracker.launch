@@ -5,7 +5,7 @@
     <arg name="numRobots" default="1"/>
     <arg name="namespace" default="machine_$(arg robotID)"/>
 
-    <arg name="cache_size" default="20"/>
+    <arg name="cache_size" default="40"/>
     <arg name="pub_topic" default="target_tracker/pose"/>
     <arg name="velPub_topic" default="target_tracker/twist"/>
     <arg name="offset_topic" default="target_tracker/offset"/>
@@ -15,7 +15,7 @@
     <arg name="measurement_topic_suffix" default="object_detections/projected_to_world"/>
     <arg name="measurement_topic_suffix_self" default="object_detections/projected_to_world"/>
 
-    <arg name="reset_time_threshold" default="10"/>  <!--How long to wait before resetting if not receiving new measurements-->
+    <arg name="reset_time_threshold" default="60"/>  <!--How long to wait before resetting if not receiving new measurements-->
 
     <group ns="$(arg namespace)">
         <arg name="name" value="target_tracker_kf"/>
