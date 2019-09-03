@@ -9,9 +9,9 @@
     <arg name="namespace" value="target_$(arg tgtID)" />
     <!-- icreate robot model -->
     <!--<node pkg="random_moving_target" type="waypoints_target.py" name="waypoints_target" output="screen"></node>-->
-    <group ns="$(arg namespace)">	
+    <!--<group ns="$(arg namespace)">	
       <node name="create_model" args="$ -file $(find random_moving_target)/urdf/target_RAL.sdf -sdf -model $(arg robot_name)" pkg="gazebo_ros" type="spawn_model"/>
-    </group>
+    </group>-->
     <!--node pkg="random_moving_target" type="random_walk.py" name="random_walk" output="screen"></node-->
 
     
