@@ -140,12 +140,12 @@ catkin_package(
 include_directories(
   ${SWRESAMPLE_INCUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
-  /opt/spinnaker_1_1_0_43_amd64/include
+  /usr/include/spinnaker
 )
 link_directories(
   ${SWRESAMPLE_LIBRARY_DIRS}
   ${catkin_LIBRARY_DIRS}
-  /opt/spinnaker_1_1_0_43_amd64/lib
+  #/opt/spinnaker/lib
 
 )
 

@@ -15,7 +15,7 @@ class ptgreyhelper {
 public:
     ptgreyhelper(int framerate);
     ~ptgreyhelper();
-    frameptr getFrame (uint8_t* buffer, size_t maxsize);
+    frameptr getFrame (uint8_t* buffer, size_t maxsize,int64_t minID);
     int getHeight(void);
     int getWidth(void);
 

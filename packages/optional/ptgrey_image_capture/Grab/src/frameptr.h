@@ -10,7 +10,7 @@
 namespace videograb {
 class frameptr {
 public:
-   uint64_t number;
+   int64_t number;
    uint8_t * buffer;
    boost::posix_time::ptime timestamp;
 };

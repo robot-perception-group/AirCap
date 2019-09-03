@@ -32,6 +32,8 @@ class transfer_frame_priv {
 public:
     uint64_t number;
     size_t size;
+    size_t pos;
+    boost::posix_time::time_duration diff;
 };
 
 class videograb_priv {
@@ -54,10 +56,11 @@ public:
     ros::Publisher frame_pub;
     boost::filesystem::ofstream timesfile;
     boost::thread *thread;
+    boost::thread *publishthread;
     int pipe[2];
+    int pipe2[2];
     uint8_t *bufferqueue[64];
     volatile int bufferfill=0;
-    volatile int bufferread=0;
     volatile int bufferwrite=0;
     volatile int recording = 0;
     
@@ -67,9 +70,27 @@ public:
         transfer_frame_priv transfer;
         while (thread) {
             read(pipe[0],&transfer,sizeof(transfer));
-	    libavhelper_save_frame(bufferqueue[bufferread++],transfer.number);
-	    bufferread=bufferread%64;
+	    libavhelper_save_frame(bufferqueue[transfer.pos],transfer.number);
 	    bufferfill--;
+        }
+    }
+    void publish()
+    {
+        transfer_frame_priv transfer;
+        while (thread) {
+            read(pipe2[0],&transfer,sizeof(transfer));
+	    sensor_msgs::Image msg;
+	    msg.header.seq=transfer.number;
+	    msg.header.stamp.sec=transfer.diff.total_seconds();
+	    msg.header.stamp.nsec=1000 * (transfer.diff.total_microseconds() % 1000000);
+	    msg.header.frame_id= nameSpace.substr(1,nameSpace.length()-1) + "_camera_rgb_optical_link";
+	    msg.height=helper->getHeight();
+	    msg.width=helper->getWidth();
+	    msg.encoding="bgr8";
+	    msg.step=helper->getWidth()*3;
+	    msg.data.resize(msg.height*msg.step);
+	    memcpy((char*)(&msg.data[0]),bufferqueue[transfer.pos],msg.height*msg.step);
+	    frame_pub.publish(msg);
         }
     }
     
@@ -109,12 +130,14 @@ videograb::videograb(int argc, char * *argv)
     instance->frame_pub = instance->nodehandle->advertise<sensor_msgs::Image>(instance->nameSpace + "/video",10);
     instance->timesfile.open(instance->videofilename + ".times");
     pipe(instance->pipe);
+    pipe(instance->pipe2);
 
     // allocate loads of memory
     for (int t=0;t<64;t++) {
     	instance->bufferqueue[t] = new uint8_t[instance->helper->getWidth()*instance->helper->getHeight()*3];
     }
     instance->thread = new boost::thread(boost::bind(&videograb_priv::run, instance));
+    instance->publishthread = new boost::thread(boost::bind(&videograb_priv::publish, instance));
 }
 
 videograb::~videograb()
@@ -152,34 +175,31 @@ int videograb::run(void)
 
     int first=1;
     instance->bufferwrite=63;
+    int64_t previous=-1;
     while (ros::ok()) {
-	frameptr imagebuffer=instance->helper->getFrame(instance->bufferqueue[(instance->bufferwrite+1)%64],3*instance->helper->getWidth()*instance->helper->getHeight());
+	transfer.pos=(instance->bufferwrite+1)%64;
+	frameptr imagebuffer=instance->helper->getFrame(instance->bufferqueue[transfer.pos],3*instance->helper->getWidth()*instance->helper->getHeight(),previous);
         if (!imagebuffer.buffer) {
 		continue;
 	}
+	if (imagebuffer.number<=previous) {
+		std::cerr << "Duplicate frame ID: " << imagebuffer.number << " <= " << previous << std::endl;
+		continue;
+	}
+	previous=imagebuffer.number;
 
 	// send image to ros
-	boost::posix_time::time_duration diff = imagebuffer.timestamp - instance->epoch;
-	sensor_msgs::Image msg;
-	msg.header.seq=imagebuffer.number;
-	msg.header.stamp.sec=diff.total_seconds();
-	msg.header.stamp.nsec=1000 * (diff.total_microseconds() % 1000000);
-	msg.header.frame_id= instance->nameSpace.substr(1,instance->nameSpace.length()-1) + "_camera_rgb_optical_link";
-	msg.height=instance->helper->getHeight();
-	msg.width=instance->helper->getWidth();
-	msg.encoding="bgr8";
-	msg.step=instance->helper->getWidth()*3;
-	msg.data.resize(msg.height*msg.step);
-	memcpy((char*)(&msg.data[0]),&imagebuffer.buffer[0],msg.height*msg.step);
-	instance->frame_pub.publish(msg);
+	transfer.number = imagebuffer.number;
+	transfer.size = 3*instance->helper->getWidth()*instance->helper->getHeight();
+	transfer.diff = imagebuffer.timestamp - instance->epoch;
+	
+	write(instance->pipe2[1],&transfer,sizeof(transfer));
 
 	if (instance->recording || first) {	
 		if (instance->bufferfill<63) {
-			instance->timesfile << imagebuffer.number << '\t' << diff.total_microseconds() << std::endl;
+			instance->timesfile << imagebuffer.number << '\t' << transfer.diff.total_microseconds() << std::endl;
 
 			// encode video
-			transfer.number = imagebuffer.number;
-			transfer.size = 3*instance->helper->getWidth()*instance->helper->getHeight();
 			instance->bufferfill++;
 			instance->bufferwrite++;
 			//std::memcpy(instance->bufferqueue[instance->bufferwrite++],imagebuffer.buffer,transfer.size);
@@ -192,10 +212,10 @@ int videograb::run(void)
 		}
 	}
 	
-	diff=imagebuffer.timestamp-instance->start;
+	transfer.diff=imagebuffer.timestamp-instance->start;
 
         if (frames%instance->framerate==0) {
-		rosinfoPrint( static_cast<std::ostringstream*>( &(std::ostringstream() <<  "Frame: " << frames << "/" << imagebuffer.number << ", Average rate: " << (double)(1000000.*frames)/diff.total_microseconds() << ", Skipped frames: " << (imagebuffer.number-frames) << std::endl ))->str().c_str());
+		rosinfoPrint( static_cast<std::ostringstream*>( &(std::ostringstream() <<  "Frame: " << frames << "/" << imagebuffer.number << ", Average rate: " << (double)(1000000.*frames)/transfer.diff.total_microseconds() << ", Skipped frames: " << (imagebuffer.number-frames) << std::endl ))->str().c_str());
 	}
 	
 	frames++;

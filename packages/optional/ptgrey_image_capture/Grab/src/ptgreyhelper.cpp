@@ -1,6 +1,6 @@
-	/*
-	 * TODO: Add apropriate License and copyright header
-	 */
+/*
+ * TODO: Add apropriate License and copyright header
+ */
 
 #include "Spinnaker.h"
 #include "SpinGenApi/SpinnakerGenApi.h"
@@ -10,28 +10,44 @@
 #include "ptgreyhelper.h"
 #include "frameptr.h"
 
-	namespace videograb {
+namespace videograb {
 
-	// Namespace for using Spinnaker objects.
-	using namespace Spinnaker;
-	using namespace Spinnaker::GenApi;
-	using namespace Spinnaker::GenICam;
+// Namespace for using Spinnaker objects.
+using namespace Spinnaker;
+using namespace Spinnaker::GenApi;
+using namespace Spinnaker::GenICam;
 
-	class ExposureEventHandler : public DeviceEvent
-	{
-	public:
-	    ExposureEventHandler() {};
-	    ~ExposureEventHandler() {};
-	    boost::posix_time::ptime grabtime;
-	    int64_t volatile latestFrame = -1;
-	    void OnDeviceEvent( gcstring eventName)
-	    {
-		    if (eventName=="EventExposureEnd") {
-	            grabtime = boost::posix_time::microsec_clock::universal_time();
-        	    latestFrame ++;
+class ExposureEventHandler : public DeviceEvent
+{
+public:
+    ExposureEventHandler() {};
+    ~ExposureEventHandler() {};
+    CameraPtr camera;
+    boost::posix_time::ptime grabtime;
+    //boost::posix_time::ptime p1t;
+    //boost::posix_time::ptime p2t;
+    //boost::posix_time::ptime p3t;
+    int64_t volatile latestFrame = -1;
+    //int64_t volatile p1 = -1;
+    //int64_t volatile p2 = -1;
+    //int64_t volatile p3 = -1;
+    int64_t frameoffset = 0;
+    void OnDeviceEvent( gcstring eventName)
+    {
+	    if (eventName=="EventExposureEnd") {
+		    grabtime = boost::posix_time::microsec_clock::universal_time();
+		    if (latestFrame==-1) {
+			    frameoffset=camera->EventExposureEndFrameID.GetValue();
+		    }
+		    latestFrame=camera->EventExposureEndFrameID.GetValue()-frameoffset;
+		    //p3t=p2t;
+		    //p3=p2;
+		    //p2t=p1t;
+		    //p2=p1;
+		    //p1t=grabtime;
+		    //p1=latestFrame;
 	    }
     }
-    
 };
 
 
@@ -85,6 +101,7 @@ ptgreyhelper::ptgreyhelper(int framerate)
 	    ISP->SetValue(false);
     } catch (std::exception e) {
             std::cerr << "Camera not ready! Replug camera." << std::endl;
+	    instance->camera->DeviceReset.Execute(true);
 	    instance->camera=NULL;
 	    instance->system->ReleaseInstance();
 	    instance->system=NULL;
@@ -105,6 +122,7 @@ std::cout << " setting width x height to " << instance->width << "x" << instance
         AcquisitionFrameRate->SetValue(framerate);
     } catch (std::exception e) {
             std::cerr << "USB bus too slow, replug camera!" << std::endl;
+	    instance->camera->DeviceReset.Execute(true);
 	    instance->camera=NULL;
 	    instance->system->ReleaseInstance();
 	    instance->system=NULL;
@@ -154,7 +172,34 @@ std::cout << " setting width x height to " << instance->width << "x" << instance
 		std::cout << "\t" << ptrEnumEntry->GetDisplayName() << ": enabled..." << std::endl;
 	}
     instance->exposureEventHandler =  new ExposureEventHandler();
+    instance->exposureEventHandler->camera = instance->camera;
     instance->camera->RegisterEvent( *instance->exposureEventHandler );
+
+    // set exposure
+    CEnumerationPtr ptrExposureAuto = nodemap.GetNode("ExposureAuto");
+    if (!IsAvailable(ptrExposureAuto) || !IsWritable(ptrExposureAuto))
+    {
+	    std::cerr << "Unable to disable automatic exposure (node retrieval). Aborting..." << std::endl;
+    } else {
+
+	    CEnumEntryPtr ptrExposureAutoOff = ptrExposureAuto->GetEntryByName("Off");
+	    if (!IsAvailable(ptrExposureAutoOff) || !IsReadable(ptrExposureAutoOff))
+	    {
+		    std::cerr << "Unable to disable automatic exposure (enum entry retrieval). Aborting..." << std::endl;
+	    } else {
+		    ptrExposureAuto->SetIntValue(ptrExposureAutoOff->GetValue());
+	    }
+
+	    CFloatPtr ptrExposureTime = nodemap.GetNode("ExposureTime");
+	    if (!IsAvailable(ptrExposureTime) || !IsWritable(ptrExposureTime))
+	    {
+		    std::cerr << "Unable to set exposure time. Aborting..." << std::endl;
+	    } else {
+		    std::cerr << "Forcing exposure time to 250 us" << std::endl;
+		    ptrExposureTime->SetValue(250);
+	    }
+
+    }
 
     try{
         instance->camera->BeginAcquisition();
@@ -190,7 +235,7 @@ int ptgreyhelper::getHeight()
     return instance->height;
 }
 
-frameptr ptgreyhelper::getFrame(uint8_t* buffer, size_t maxsize)
+frameptr ptgreyhelper::getFrame(uint8_t* buffer, size_t maxsize,int64_t minID)
 {
 	frameptr result;
 	result.buffer = NULL;
@@ -198,17 +243,56 @@ frameptr ptgreyhelper::getFrame(uint8_t* buffer, size_t maxsize)
 		return result;
 	}
         
+	result.timestamp = instance->exposureEventHandler->grabtime;
+	result.number=instance->exposureEventHandler->latestFrame;
 	ImagePtr pResultImage = instance->camera->GetNextImage();
+	int64_t frameID = pResultImage->GetFrameID();
+	if (frameID>result.number) {
+		result.timestamp = instance->exposureEventHandler->grabtime;
+		result.number=instance->exposureEventHandler->latestFrame;
+	}
+	while (frameID<result.number or frameID<=minID) {
+		//std::cerr << "Frame outdated!!! " << result.number << " vs " <<  pResultImage->GetFrameID() << std::endl;
+		pResultImage->Release();
+		pResultImage = instance->camera->GetNextImage();	
+		frameID = pResultImage->GetFrameID();
+		if (frameID>result.number) {
+			result.timestamp = instance->exposureEventHandler->grabtime;
+			result.number=instance->exposureEventHandler->latestFrame;
+		}
+	}
+	if (frameID>result.number) {
+		// race condition - technically we should never have the data before the event handler got triggered
+		// but the event handler timing sometimes isn't the greatest with spinnaker
+		result.timestamp = boost::posix_time::microsec_clock::universal_time();
+		result.number=frameID;
+		std::cerr << "Event Handler Lagging!" << std::endl;
+	}
 	if (pResultImage->IsIncomplete()) {
 		pResultImage->Release();
 		return result;
 	}
+	/*
 	result.timestamp = instance->exposureEventHandler->grabtime;
 	result.number=instance->exposureEventHandler->latestFrame;
-	if (result.number!=pResultImage->GetFrameID()) {
-		std::cerr << "Frame outdated!!!" << std::endl;
-		return result;
+	if (result.number>frameID) {
+		result.timestamp = instance->exposureEventHandler->p1t;
+		result.number=instance->exposureEventHandler->p1;
+		if (result.number>frameID) {
+			result.timestamp = instance->exposureEventHandler->p2t;
+			result.number=instance->exposureEventHandler->p2;
+			if (result.number>frameID) {
+				result.timestamp = instance->exposureEventHandler->p2t;
+				result.number=instance->exposureEventHandler->p2;
+				if (result.number>frameID) {
+					std::cerr << "Frame outdated!!! " << instance->exposureEventHandler->latestFrame << " vs " <<  frameID << std::endl;
+					pResultImage->Release();
+					return result;
+				}
+			}
+		}
 	}
+	*/
 	ImagePtr convertedImage = pResultImage->Convert(PixelFormat_BGR8,NEAREST_NEIGHBOR);
       	uint8_t * origbuffer=(uint8_t*)convertedImage->GetData();
 	size_t xwidth= convertedImage->GetWidth();
