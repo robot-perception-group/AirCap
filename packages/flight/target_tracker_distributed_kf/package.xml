@@ -46,12 +46,15 @@
     <build_depend>eigen</build_depend>
     <build_depend>dynamic_reconfigure</build_depend>
     <build_depend>uav_msgs</build_depend>
+    <build_depend>mrpt_bridge</build_depend>
+    <build_depend>pose_cov_ops</build_depend>
     <run_depend>geometry_msgs</run_depend>
     <run_depend>roscpp</run_depend>
     <run_depend>std_msgs</run_depend>
     <run_depend>eigen</run_depend>
     <run_depend>dynamic_reconfigure</run_depend>
     <run_depend>uav_msgs</run_depend>
+    <run_depend>pose_cov_ops</run_depend>
 
 
     <!-- The export tag contains other, unspecified, tags -->
