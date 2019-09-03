@@ -246,22 +246,7 @@ void tfFromUAVPose::rawPoseCallback(const uav_msgs::uav_pose::ConstPtr &msg) {
     stdRawPose_.pose.pose.orientation = msg->orientation;
 
     // Convert covariance types
-    uavCovariance_to_rosCovariance(msg, stdPose_.pose);
-
-    // Add offset
-    try {
-        stdPose_.pose.pose.position.x += offset_.at(0);
-        stdPose_.pose.pose.position.y += offset_.at(1);
-        stdPose_.pose.pose.position.z += offset_.at(2);
-
-        stdPose_.pose.covariance[0] += added_covariance_.at(0);
-        stdPose_.pose.covariance[7] += added_covariance_.at(1);
-        stdPose_.pose.covariance[14] += added_covariance_.at(2);
-    }
-    catch (std::out_of_range &oor) {
-        ROS_ERROR_STREAM("Couldn't add offset: " << oor.what());
-        return;
-    }
+    uavCovariance_to_rosCovariance(msg, stdRawPose_.pose);
 
     // Publish std pose msg
     stdRawPosePub_.publish(stdRawPose_);
