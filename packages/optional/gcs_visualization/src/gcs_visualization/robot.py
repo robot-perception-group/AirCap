@@ -71,7 +71,7 @@ class GroundTrack(Command):
             if (self.isnewpoint(point)!=1):
                 return
             self.points.append(point)
-            if (len(self.points)>1000):
+            if (len(self.points)>200):
                 self.points.pop(0)
 
 class CommandArrow(Command):
