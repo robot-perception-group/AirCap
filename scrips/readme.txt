@@ -1,4 +1,4 @@
-globalstart.txt is supposed to be run from a basestation/laptop
+groundstation/globalstart.txt is supposed to be run from a basestation/laptop
 
 It will start everything up on the robots (listed in robots.txt) all connected in a Wifi wireless LAN.
 Each robot should have each other in /etc/hosts
