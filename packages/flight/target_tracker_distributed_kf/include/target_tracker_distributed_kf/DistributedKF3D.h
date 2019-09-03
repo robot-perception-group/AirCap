@@ -31,7 +31,7 @@ namespace target_tracker_distributed_kf {
     typedef struct CacheElement_s{
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        ros::Time stamp;
+            ros::Time stamp;
         string frame_id;
         VectorXd state;
         MatrixXd cov;
@@ -213,6 +213,9 @@ namespace target_tracker_distributed_kf {
             // Decay of velocity
             double velocityDecayTime{3.0};
             double offsetDecayTime{30.0};
+
+            // FalsePositiveThreshhold x in x*sigma
+            double falsePositiveThresholdSigma{6.0};
 
             void initializeSubscribers();
     };

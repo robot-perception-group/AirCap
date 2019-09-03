@@ -31,6 +31,9 @@ namespace target_tracker_distributed_kf {
         pnh_.getParam("initialUncertaintyOffsetXY", initialUncertaintyOffsetXY);
         pnh_.getParam("initialUncertaintyOffsetZ", initialUncertaintyOffsetZ);
 
+        // false positive detection
+        pnh_.getParam("falsePositiveThresholdSigma", falsePositiveThresholdSigma);
+
         // Advertise publish topic
         string pub_topic{"target_tracker/pose"};
         pnh_.getParam("pub_topic", pub_topic);
@@ -40,13 +43,10 @@ namespace target_tracker_distributed_kf {
         pnh_.getParam("velPub_topic", velPub_topic);
         targetVelPub_ = nh_.advertise<TwistWithCovarianceStamped>(velPub_topic, 10);
 
-
-
         // Advertise publish topic
         string offset_topic{"target_tracker/offset"};
         pnh_.getParam("offset_topic", offset_topic);
         offsetPub_ = nh_.advertise<PoseWithCovarianceStamped>(offset_topic, 10);
-
 
         ROS_INFO_STREAM("Publishing to " << targetPub_.getTopic());
         ROS_INFO_STREAM("Offset Publishing to " << offsetPub_.getTopic());
@@ -291,8 +291,54 @@ namespace target_tracker_distributed_kf {
         }
 
         const auto closest_measurement = elem.measurements[closest_idx];
+        bool isSelf = elem.isSelfRobot;
 
-        const auto &H = elem.isSelfRobot ? Hself : Hother;
+        if (isSelf) {
+            // check if measurement is a false positive. False positives are allowed to be fused for person estimate, but hazardous for self pose estimate
+            // we set isSelf to false if we think we had a false positive
+
+            // the state is the current person estimate
+            PoseWithCovariance state;
+            state.pose.position.x = elem.state(0);
+            state.pose.position.y = elem.state(1);
+            state.pose.position.z = elem.state(2);
+            state.pose.orientation.w = 1;
+            state.pose.orientation.x = 0;
+            state.pose.orientation.y = 0;
+            state.pose.orientation.z = 0;
+            state.covariance = { elem.cov(0*9+0), elem.cov(0*9+1), elem.cov(0*9+2), 0, 0, 0,  elem.cov(1*9+0), elem.cov(1*9+1), elem.cov(1*9+2), 0, 0, 0,  elem.cov(2*9+0), elem.cov(2*9+1), elem.cov(2*9+2), 0, 0, 0 };
+
+            // the measurement distribution is the distribution of the measurement with zero mean
+            PoseWithCovariance distribution(*closest_measurement);
+            distribution.pose.position.x = 0;
+            distribution.pose.position.y = 0;
+            distribution.pose.position.z = 0;
+            distribution.pose.orientation = state.pose.orientation;
+
+            // state merged with measurement distribution gives the expected mean distribution for new measurements under current state and measurement covariance
+            PoseWithCovariance merged;
+            pose_cov_ops::compose(state,distribution,merged);
+
+            // calculate normalized expectance density at the mean of the observed measurement
+            mrpt::math::CMatrixDouble31 statemean,measurementmean;
+            mrpt::math::CMatrixDouble33 expectance;
+            statemean << elem.state(0), elem.state(1), elem.state(2);
+            measurementmean << closest_measurement->pose.position.x, closest_measurement->pose.position.y, closest_measurement->pose.position.z;
+            expectance << merged.covariance[0*6+0], merged.covariance[0*6+1], merged.covariance[0*6+2], merged.covariance[1*6+0], merged.covariance[1*6+1], merged.covariance[1*6+2], merged.covariance[2*6+0], merged.covariance[2*6+1], merged.covariance[2*6+2];
+            double density = mrpt::math::normalPDF(measurementmean, statemean, expectance) / mrpt::math::normalPDF(statemean, statemean, expectance);
+
+            // normalizeed density function with sigma=1 and mu=0:  e^(-1/2 * x^2 )
+            // then x = sqrt(-2*log(density))
+            double x = sqrt(-2*log(density));
+
+            // ignore measurement for self pose estimation if it is less likely to be a true positive than the prior likelihood for false positives.
+            if ( x > falsePositiveThresholdSigma ) {
+                ROS_INFO_STREAM("Person Measurement likelyhood " << x << "*sigma beyond threshold of " << falsePositiveThresholdSigma << "*sigma. Discarding!");
+                isSelf = false;
+            }
+        }
+
+        const auto &H = isSelf ? Hself : Hother;
 
         MatrixXd Q((int) measurement_state_size, (int) measurement_state_size);
         //populateJacobianQ(Q, closest_measurement);
@@ -327,68 +373,6 @@ namespace target_tracker_distributed_kf {
     }
 
     void DistributedKF3D::predictAndPublish(const uav_msgs::uav_poseConstPtr &pose) {
-
-        PoseWithCovariance DemoPose1,DemoPose2,DemoPose3,DemoPose4,DemoPose5;
-        DemoPose1.pose.position.x = 10;
-        DemoPose1.pose.position.y = 0;
-        DemoPose1.pose.position.z = 0;
-        DemoPose1.pose.orientation.w=1;
-        DemoPose1.pose.orientation.x=0;
-        DemoPose1.pose.orientation.y=0;
-        DemoPose1.pose.orientation.z=0;
-        DemoPose1.covariance= { 4,0,0,0,0,0,  0,4,0,0,0,0, 0,0,8,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0 };
-
-        DemoPose2.pose.position.x = 0;
-        DemoPose2.pose.position.y = 0;
-        DemoPose2.pose.position.z = 0;
-        tf::Quaternion qENU;
-        qENU.setEuler(0,0, M_PI / 4.0);
-        qENU.normalize();
-        tf::quaternionTFToMsg(qENU,DemoPose2.pose.orientation);
-        DemoPose2.covariance= { 0,0,0,0,0,0,  0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0 };
-
-        DemoPose3.pose.position.x = 0;
-        DemoPose3.pose.position.y = 0;
-        DemoPose3.pose.position.z = 0;
-        DemoPose3.pose.orientation.w=1;
-        DemoPose3.pose.orientation.x=0;
-        DemoPose3.pose.orientation.y=0;
-        DemoPose3.pose.orientation.z=0;
-        DemoPose3.pose.orientation.z=0;
-        DemoPose3.covariance= { .1,0,0,0,0,0,  0,25,0,0,0,0, 0,0,.1,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0 };
-
-        pose_cov_ops::compose(DemoPose1, DemoPose2, DemoPose4);
-        pose_cov_ops::compose(DemoPose4, DemoPose3, DemoPose5);
-        PoseWithCovarianceStamped mmsg;
-        //mmsg.header=pose->header;
-        //mmsg.pose=DemoPose1;
-        //DemoPub1_.publish(mmsg);
-        //mmsg.pose=DemoPose2;
-        //DemoPub2_.publish(mmsg);
-        //mmsg.pose=DemoPose3;
-        //DemoPub3_.publish(mmsg);
-        //mmsg.pose=DemoPose4;
-        //DemoPub4_.publish(mmsg);
-        mmsg.pose=DemoPose5;
-        //DemoPub1_.publish(mmsg);
-        //mrpt::poses::CPose3DPDFGaussian mPose;
-        //mrpt_bridge::convert(DemoPose5,mPose);
-        //mrpt::poses::CPose3D point(mrpt::poses::CPoint3D(10,0,0));
-        int t;
-        for (t=0;t<50;t++) {
-            mrpt::math::CMatrixDouble31 point,mean;
-            point << 6.0+t*0.1,1.0,0.0;
-            mean << DemoPose5.pose.position.x,DemoPose5.pose.position.y,DemoPose5.pose.position.z ;
-            mrpt::math::CMatrixDouble33 cov;
-            cov << DemoPose5.covariance[0],DemoPose5.covariance[1],DemoPose5.covariance[2],DemoPose5.covariance[6],DemoPose5.covariance[7],DemoPose5.covariance[8],DemoPose5.covariance[12],DemoPose5.covariance[13],DemoPose5.covariance[14];
-            double density = mrpt::math::normalPDF(point,mean,cov)/mrpt::math::normalPDF(mean,mean,cov);
-            // normalizeed density function with sigma=1 and mu=0:  e^(-1/2 * x^2 )
-            // then x = sqrt(-2*log(density))
-            double x = sqrt(-2*log(density));
-            ROS_INFO_STREAM("Evaluation at " << point[0] << " is " << density << " at " << x << " sigma!");
-        }
-        ROS_INFO_STREAM("=======================================================================================================");
-
 
         if (state_cache_.empty())
             return;
@@ -565,6 +549,8 @@ namespace target_tracker_distributed_kf {
 
         velocityDecayTime = config.velocityDecayTime;
         offsetDecayTime = config.offsetDecayTime;
+
+        falsePositiveThresholdSigma = config.falsePositiveThresholdSigma;
 
         // Reinitialize matrices
         initializeStaticMatrices();
