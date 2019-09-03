@@ -70,16 +70,30 @@ double Planner::getPotential(double d, double threshold, double tPotFuncInfD, do
   if (d < tPotFuncInfD)
       z = (M_PI/2.0)*0.1/ (threshold - tPotFuncInfD);
   else
-	    z = (M_PI/2.0) *((d - tPotFuncInfD)/ (threshold - tPotFuncInfD));
-	double cot_z = cos(z)/sin(z);
-	double retValue = (M_PI/2.0) * (1.0 / (threshold - tPotFuncInfD)) *
-			(cot_z + z - (M_PI/2.0));
+      z = (M_PI/2.0) *((d - tPotFuncInfD)/ (threshold - tPotFuncInfD));
+  double cot_z = cos(z)/sin(z);
+  double retValue = (M_PI/2.0) * (1.0 / (threshold - tPotFuncInfD)) *
+      (cot_z + z - (M_PI/2.0));
   if (d < threshold)
-	   return tPotFuncGain * retValue;
+     return tPotFuncGain * retValue;
   else
      return 0;
 }
-
+double Planner::getAttPotential(double d, double threshold, double tPotFuncZeroD, double tPotFuncGain) const {
+  double z;
+  if (d>tPotFuncZeroD)
+    z = 100; //double check this value
+  else
+    z = (M_PI/2.0) *((threshold - d)/ (threshold - tPotFuncZeroD));
+  double cot_z = cos(z)/sin(z);
+  double retValue = (M_PI/2.0) * (1.0 / (threshold - tPotFuncZeroD)) *
+      (cot_z + z - (M_PI/2.0));
+  //      pow((cot_z + z - (M_PI/2.0)),tPotFuncGain);
+  if (d >= threshold)
+    return tPotFuncGain * retValue;
+  else
+    return 0;
+}
 double Planner::getExpPotential(double d, double threshold, double tPotFuncGain)
 {
   double f_repel = exp(d)-0.7;
@@ -133,6 +147,7 @@ void Planner::avoidTeamMates_byComputingExtForce()
     Eigen::Vector3d totalForce = Velocity3D::Zero();
     double potentialForce_repulsive ;
     double potentialForce_angular ;
+    double attraction_Force ;
     double covariance_radius = 2*sqrt(pow(selfPose.pose.covariance[0] + selfOffset.pose.covariance[0],2)+pow(selfPose.pose.covariance[1] + selfOffset.pose.covariance[1],2));
     Position3D posDiffT (tCurrentSelfPosition(0) - xT,tCurrentSelfPosition(1) - yT,0); // vector away from target
     double targetDist = posDiffT.norm();
@@ -171,7 +186,7 @@ void Planner::avoidTeamMates_byComputingExtForce()
         double comm_failure_time_secs = (ros::Time::now() - matesPoses[j].header.stamp).toSec();
         double comm_failure_dilation = copterVelocityLimitX*comm_failure_time_secs*deltaT;
         double obstacleAvoidanceThreshold = maxOffsetUncertaintyRadius + covariance_radius + comm_failure_dilation;
-        ROS_INFO("obstacleAvoidanceThreshold : %f", obstacleAvoidanceThreshold);
+        // ROS_INFO("obstacleAvoidanceThreshold : %f", obstacleAvoidanceThreshold);
         potentialForce_repulsive = getPotential(neighborDist,obstacleAvoidanceThreshold,neighborGuaranteeThreshold,50); //away from neighbor
         totalForce +=  force_clamping((potentialForce_repulsive) * posDiffUnit);
 
@@ -198,18 +213,35 @@ void Planner::avoidTeamMates_byComputingExtForce()
           thetaDiff = pow(thetaDiff,2);
         }
         // ROS_INFO("thetaDiff: %f, mateID:%d", temp*180/PI,j);
-        potentialForce_angular = getPotential(thetaDiff,pow((2*PI/numRobots_),2),pow(activeGuaranteeThreshold,2),50);
-
+        if (numRobots_ == 2) 
+          {
+            potentialForce_angular = getPotential(thetaDiff,pow((PI/(numRobots_)),2),pow(activeGuaranteeThreshold,2),50);
+            attraction_Force = getAttPotential(thetaDiff, (PI+2,2), pow((PI/(numRobots_)),2), 50);
+           } 
+        else 
+        {
+            potentialForce_angular = getPotential(thetaDiff,pow((2*PI/numRobots_),2),pow(activeGuaranteeThreshold,2),50);
+         }
+        
         Position3D tangent(-posDiffT(1),posDiffT(0),0);
         Position3D tangentNeg(posDiffT(1),-posDiffT(0),0);
         Position3D tangentUnit = tangent.normalized();
         Position3D tangentUnitNeg = tangentNeg.normalized();
-        double c = 0.1; //small constant for non-zero surface active tracking force
+        double c = 1; //small constant for non-zero surface active tracking force
+        
         if (posDiffUnit.dot(tangentUnit) > posDiffUnit.dot(tangentUnitNeg))
+          {
           totalForce += force_clamping((potentialForce_angular) * tangentUnit *  (abs(targetDist - r)+c) );
+          if (numRobots_== 2)
+            {totalForce += force_clamping((attraction_Force) * tangentUnitNeg *  1/(abs(targetDist - r)+c) );}
+          }
           // totalForce += (potentialForce_angular) * tangentUnit *  0;
         else
+          {
           totalForce += force_clamping((potentialForce_angular) * tangentUnitNeg *  (abs(targetDist - r)+c)) ;
+          if (numRobots_ == 2)
+            {totalForce += force_clamping((attraction_Force) * tangentUnit *  1/(abs(targetDist - r)+c) );}
+          }
           // totalForce += (potentialForce_angular) * tangentUnitNeg *  0  ;
       }
     }
@@ -280,7 +312,7 @@ void Planner::avoidTeamMates_byComputingExtForce()
         Position3D posDiffUnit = posDiff.normalized();
         potentialForce_repulsive = getPotential(neighborDist,neighborDistThreshold+covariance_radius,obstacleGuaranteeThreshold,50);
         totalForce += force_clamping((potentialForce_repulsive) * posDiffUnit );
-        if (neighborDist <= 3)
+        // if (neighborDist <= 3)
         {
           double thetaMate = atan2(matePosition(1)-yT,matePosition(0)-xT) ? atan2(matePosition(1)-yT,matePosition(0)-xT) : 2*PI + atan2(matePosition(1)-yT,matePosition(0)-xT);
           double theta = atan2(tCurrentSelfPosition(1)-yT,tCurrentSelfPosition(0)-xT) ? atan2(tCurrentSelfPosition(1)-yT,tCurrentSelfPosition(0)-xT) : 2*PI + atan2(tCurrentSelfPosition(1)-yT,tCurrentSelfPosition(0)-xT);
@@ -303,7 +335,7 @@ void Planner::avoidTeamMates_byComputingExtForce()
 
          Position3D tangent(-posDiffT(1),posDiffT(0),0);
          Position3D tangentUnit = tangent.normalized();
-         totalForce += force_clamping((potentialForce_angular) * tangentUnit );
+         totalForce += force_clamping((potentialForce_angular) * tangentUnit);
        }
         // ROS_INFO("neighborDist: %f", neighborDist);
       }

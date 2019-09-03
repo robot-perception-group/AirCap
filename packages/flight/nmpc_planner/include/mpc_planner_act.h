@@ -64,7 +64,7 @@
 
 
 
-#define FORCE_LIMIT 8
+#define FORCE_LIMIT 12
 
 // #define INTERNAL_SUB_STEP 0.01
 
@@ -555,6 +555,8 @@ class Planner
     double quat2eul(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& );
 
     double getPotential(double, double, double, double) const;
+
+    double getAttPotential(double , double , double , double) const;
 
     double getExpPotential(double, double, double);
 

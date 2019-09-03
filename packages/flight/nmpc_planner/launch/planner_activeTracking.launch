@@ -31,7 +31,7 @@
     <param name="deltaT" value="0.1" type="double" />
 
     <param name="usingSimulation" value="$(arg usingSimulation)" type="bool" />
-    <param name="POINT_OBSTACLES" value="true" type="bool" />
+    <param name="POINT_OBSTACLES" value="false" type="bool" />
 
     <param name="INTERNAL_SUB_STEP" value="0.1" type="double" />
 
@@ -39,8 +39,12 @@
     <param name="tFormationRepulGain" value="35.0" type="double" />
     <param name="tGoalAttractionGain" value="7.0" type="double" />
 
-
-    <param name="neighborDistThreshold" value="1.0" type="double" />
+    <param name="approachAngleThreshold" value="0.5" type="double" />
+    <param name="neighborDistThreshold" value="7.0" type="double" />
+    <param name="neighborGuaranteeThreshold" value="1.5" type="double" />
+    <param name="obstacleGuaranteeThreshold" value="5.0" type="double" />
+    <param name="activeGuaranteeThreshold" value="1.0" type="double" />
+    <param name="targetGuaranteeThreshold" value="7.0" type="double" />
     <param name="maxOffsetUncertaintyRadius" value="3.0" type="double"/>
     <param name="distanceThresholdToTarget" value="8.0" type="double" />
     <param name="copterDesiredHeightinNED" value="-8.0" type="double" />
@@ -61,7 +65,7 @@
 
     <param name="useZeroAsFixedTarget" value="false" type="bool" />
 
-    <rosparam command="load" file="$(find nmpc_planner)/cfg/obstacles_simulation.yaml" />
+    <rosparam command="load" file="$(find nmpc_planner)/cfg/obstacles_RSB_arena.yaml" />
 
    </node>
    </group>
