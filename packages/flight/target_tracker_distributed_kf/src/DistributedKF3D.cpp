@@ -35,11 +35,6 @@ DistributedKF3D::DistributedKF3D() : pnh_("~"),
   string pub_topic{"target_tracker/pose"};
   pnh_.getParam("pub_topic", pub_topic);
   targetPub_ = nh_.advertise<PoseWithCovarianceStamped>(pub_topic, 10);
-  DemoPub1_ = nh_.advertise<PoseWithCovarianceStamped>("Demo1", 10);
-  DemoPub2_ = nh_.advertise<PoseWithCovarianceStamped>("Demo2", 10);
-  DemoPub3_ = nh_.advertise<PoseWithCovarianceStamped>("Demo3", 10);
-  DemoPub4_ = nh_.advertise<PoseWithCovarianceStamped>("Demo4", 10);
-  DemoPub5_ = nh_.advertise<PoseWithCovarianceStamped>("Demo5", 10);
 
   string velPub_topic{"target_tracker/twist"};
   pnh_.getParam("velPub_topic", velPub_topic);
@@ -375,7 +370,7 @@ void DistributedKF3D::predictAndPublish(const uav_msgs::uav_poseConstPtr &pose) 
 	//mmsg.pose=DemoPose4;
         //DemoPub4_.publish(mmsg);
 	mmsg.pose=DemoPose5;
-        DemoPub1_.publish(mmsg);
+        //DemoPub1_.publish(mmsg);
 	//mrpt::poses::CPose3DPDFGaussian mPose;
 	//mrpt_bridge::convert(DemoPose5,mPose);
 	//mrpt::poses::CPose3D point(mrpt::poses::CPoint3D(10,0,0));
@@ -393,9 +388,6 @@ void DistributedKF3D::predictAndPublish(const uav_msgs::uav_poseConstPtr &pose) 
 		ROS_INFO_STREAM("Evaluation at " << point[0] << " is " << density << " at " << x << " sigma!");
 	}
 	ROS_INFO_STREAM("=======================================================================================================");
-
-	return;
-
 
 
   if (state_cache_.empty())

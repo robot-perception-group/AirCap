@@ -151,15 +151,7 @@ namespace target_tracker_distributed_kf {
     Cache state_cache_;
     ros::Publisher targetPub_;
     ros::Publisher targetVelPub_;
-    ros::Publisher selftargetPub_;
-    ros::Publisher selftargetVelPub_;
     ros::Publisher offsetPub_;
-    ros::Publisher selfoffsetPub_;
-    ros::Publisher DemoPub1_;
-    ros::Publisher DemoPub2_;
-    ros::Publisher DemoPub3_;
-    ros::Publisher DemoPub4_;
-    ros::Publisher DemoPub5_;
 
     geometry_msgs::PoseWithCovarianceStamped msg_;
     geometry_msgs::TwistWithCovarianceStamped velMsg_;
