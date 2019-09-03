@@ -36,7 +36,9 @@ fi
 
 echo
 echo "Pinging machines:"
+number=0
 for copter in $usedcopters; do
+	number=$(( number+1 ))
 	echo -n "/machine_$number/ -- $copter -- "
 	ping -c 1 $copter >/dev/null;
 	res=$?
