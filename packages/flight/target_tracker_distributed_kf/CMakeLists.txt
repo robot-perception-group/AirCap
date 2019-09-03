@@ -39,6 +39,13 @@ else()
    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
+# This flag is used so that we don't have "no debug" issues
+set(MRPT_DONT_USE_DBG_LIBS 1)
+FIND_PACKAGE(MRPT REQUIRED COMPONENTS
+  base
+  maps
+)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -46,16 +53,16 @@ FIND_PACKAGE(catkin REQUIRED COMPONENTS
   geometry_msgs
   std_msgs
   roscpp
+  pose_cov_ops
+  mrpt_bridge
   dynamic_reconfigure
   uav_msgs
   )
 
 ## Third party modules
 FIND_PACKAGE(Eigen3 REQUIRED)
-INCLUDE_DIRECTORIES(${Eigen3_INCLUDE_DIRS})
 
 find_package(Boost REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -163,7 +170,12 @@ CATKIN_PACKAGE(
 INCLUDE_DIRECTORIES(
   include
   ${catkin_INCLUDE_DIRS}
+  ${MRPT_INCLUDE_DIRS}
+  ${Eigen3_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
+
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -196,6 +208,7 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
+  ${MRPT_LIBRARIES}
   ${Eigen3_LIBRARIES}
 )
 

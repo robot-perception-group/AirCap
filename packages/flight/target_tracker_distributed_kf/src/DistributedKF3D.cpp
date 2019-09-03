@@ -2,8 +2,12 @@
 // Created by glawless on 23.05.17.
 //
 
+#include <mrpt/poses.h>
+#include <mrpt/math.h>
+#include <mrpt_bridge/mrpt_bridge.h>
 #include <target_tracker_distributed_kf/DistributedKF3D.h>
 #include <ros/callback_queue.h>
+#include <cmath>
 
 namespace target_tracker_distributed_kf {
 
@@ -31,6 +35,11 @@ DistributedKF3D::DistributedKF3D() : pnh_("~"),
   string pub_topic{"target_tracker/pose"};
   pnh_.getParam("pub_topic", pub_topic);
   targetPub_ = nh_.advertise<PoseWithCovarianceStamped>(pub_topic, 10);
+  DemoPub1_ = nh_.advertise<PoseWithCovarianceStamped>("Demo1", 10);
+  DemoPub2_ = nh_.advertise<PoseWithCovarianceStamped>("Demo2", 10);
+  DemoPub3_ = nh_.advertise<PoseWithCovarianceStamped>("Demo3", 10);
+  DemoPub4_ = nh_.advertise<PoseWithCovarianceStamped>("Demo4", 10);
+  DemoPub5_ = nh_.advertise<PoseWithCovarianceStamped>("Demo5", 10);
 
   string velPub_topic{"target_tracker/twist"};
   pnh_.getParam("velPub_topic", velPub_topic);
@@ -323,6 +332,72 @@ bool DistributedKF3D::update(CacheElement &elem) {
 }
 
 void DistributedKF3D::predictAndPublish(const uav_msgs::uav_poseConstPtr &pose) {
+
+	PoseWithCovariance DemoPose1,DemoPose2,DemoPose3,DemoPose4,DemoPose5;
+	DemoPose1.pose.position.x = 10;
+	DemoPose1.pose.position.y = 0;
+	DemoPose1.pose.position.z = 0;
+	DemoPose1.pose.orientation.w=1;
+	DemoPose1.pose.orientation.x=0;
+	DemoPose1.pose.orientation.y=0;
+	DemoPose1.pose.orientation.z=0;
+	DemoPose1.covariance= { 4,0,0,0,0,0,  0,4,0,0,0,0, 0,0,8,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0 };
+	
+	DemoPose2.pose.position.x = 0;
+	DemoPose2.pose.position.y = 0;
+	DemoPose2.pose.position.z = 0;
+	tf::Quaternion qENU;
+	qENU.setEuler(0,0, M_PI / 4.0);
+	qENU.normalize();
+	tf::quaternionTFToMsg(qENU,DemoPose2.pose.orientation);
+	DemoPose2.covariance= { 0,0,0,0,0,0,  0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0 };
+	
+	DemoPose3.pose.position.x = 0;
+	DemoPose3.pose.position.y = 0;
+	DemoPose3.pose.position.z = 0;
+	DemoPose3.pose.orientation.w=1;
+	DemoPose3.pose.orientation.x=0;
+	DemoPose3.pose.orientation.y=0;
+	DemoPose3.pose.orientation.z=0;
+	DemoPose3.pose.orientation.z=0;
+	DemoPose3.covariance= { .1,0,0,0,0,0,  0,25,0,0,0,0, 0,0,.1,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0 };
+
+	pose_cov_ops::compose(DemoPose1, DemoPose2, DemoPose4);
+	pose_cov_ops::compose(DemoPose4, DemoPose3, DemoPose5);
+	PoseWithCovarianceStamped mmsg;
+	//mmsg.header=pose->header;
+	//mmsg.pose=DemoPose1;
+        //DemoPub1_.publish(mmsg);
+	//mmsg.pose=DemoPose2;
+        //DemoPub2_.publish(mmsg);
+	//mmsg.pose=DemoPose3;
+        //DemoPub3_.publish(mmsg);
+	//mmsg.pose=DemoPose4;
+        //DemoPub4_.publish(mmsg);
+	mmsg.pose=DemoPose5;
+        DemoPub1_.publish(mmsg);
+	//mrpt::poses::CPose3DPDFGaussian mPose;
+	//mrpt_bridge::convert(DemoPose5,mPose);
+	//mrpt::poses::CPose3D point(mrpt::poses::CPoint3D(10,0,0));
+	int t;
+	for (t=0;t<50;t++) {
+		mrpt::math::CMatrixDouble31 point,mean;
+		point << 6.0+t*0.1,1.0,0.0;
+		mean << DemoPose5.pose.position.x,DemoPose5.pose.position.y,DemoPose5.pose.position.z ;
+		mrpt::math::CMatrixDouble33 cov;
+		cov << DemoPose5.covariance[0],DemoPose5.covariance[1],DemoPose5.covariance[2],DemoPose5.covariance[6],DemoPose5.covariance[7],DemoPose5.covariance[8],DemoPose5.covariance[12],DemoPose5.covariance[13],DemoPose5.covariance[14];
+		double density = mrpt::math::normalPDF(point,mean,cov)/mrpt::math::normalPDF(mean,mean,cov);
+		// normalizeed density function with sigma=1 and mu=0:  e^(-1/2 * x^2 )
+		// then x = sqrt(-2*log(density))
+		double x = sqrt(-2*log(density));
+		ROS_INFO_STREAM("Evaluation at " << point[0] << " is " << density << " at " << x << " sigma!");
+	}
+	ROS_INFO_STREAM("=======================================================================================================");
+
+	return;
+
+
+
   if (state_cache_.empty())
     return;
 

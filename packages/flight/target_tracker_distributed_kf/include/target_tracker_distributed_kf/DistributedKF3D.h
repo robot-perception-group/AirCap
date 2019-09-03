@@ -19,6 +19,8 @@
 #include <target_tracker_distributed_kf/KalmanFilterParamsConfig.h>
 #include <uav_msgs/uav_pose.h>
 #include <memory>
+#include <tf/transform_datatypes.h>
+#include <pose_cov_ops/pose_cov_ops.h>
 
 namespace target_tracker_distributed_kf {
 
@@ -153,6 +155,11 @@ namespace target_tracker_distributed_kf {
     ros::Publisher selftargetVelPub_;
     ros::Publisher offsetPub_;
     ros::Publisher selfoffsetPub_;
+    ros::Publisher DemoPub1_;
+    ros::Publisher DemoPub2_;
+    ros::Publisher DemoPub3_;
+    ros::Publisher DemoPub4_;
+    ros::Publisher DemoPub5_;
 
     geometry_msgs::PoseWithCovarianceStamped msg_;
     geometry_msgs::TwistWithCovarianceStamped velMsg_;
