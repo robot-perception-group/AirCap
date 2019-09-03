@@ -207,6 +207,10 @@ namespace target_tracker_distributed_kf {
             noiseVelZVar{0.01},
             noiseOffZVar{0.01};
 
+    double  posGlobalOffsetBiasX{0.0},
+            posGlobalOffsetBiasY{0.0},
+            posGlobalOffsetBiasZ{0.0};
+
     // Decay of velocity
     double velocityDecayTime{3.0};
     double offsetDecayTime{30.0};

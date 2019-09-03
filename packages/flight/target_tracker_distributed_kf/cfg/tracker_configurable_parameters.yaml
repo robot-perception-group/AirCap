@@ -1,3 +1,6 @@
+posGlobalOffsetBiasX: 0.0
+posGlobalOffsetBiasY: 0.0
+posGlobalOffsetBiasZ: 0.0
 noisePosXVar: 0.0
 noisePosYVar: 0.0
 noisePosZVar: 0.0

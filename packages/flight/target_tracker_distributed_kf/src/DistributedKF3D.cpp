@@ -238,9 +238,9 @@ bool DistributedKF3D::predict(const CacheElement &in, CacheElement &out) {
   const double offsetDecayFactor = pow(offsetDecayAlpha, deltaT);
   //const double offsetIntegralFactor = (offsetDecayFactor - 1)/log(offsetDecayAlpha);
 
-  outs(6) = ins(6) * offsetDecayFactor;
-  outs(7) = ins(7) * offsetDecayFactor;
-  outs(8) = ins(8) * offsetDecayFactor;
+  outs(6) = posGlobalOffsetBiasX + ((ins(6) - posGlobalOffsetBiasX) * offsetDecayFactor);
+  outs(7) = posGlobalOffsetBiasY + ((ins(7) - posGlobalOffsetBiasY) * offsetDecayFactor);
+  outs(8) = posGlobalOffsetBiasZ + ((ins(8) - posGlobalOffsetBiasZ) * offsetDecayFactor);
 
   // Construct jacobian G based on deltaT
   MatrixXd G((int) state_size, (int) state_size);
@@ -491,6 +491,10 @@ void DistributedKF3D::dynamicReconfigureCallback(KalmanFilterParamsConfig &confi
   noisePosZVar = config.noisePosZVar;
   noiseVelZVar = config.noiseVelZVar;
   noiseOffZVar = config.noiseOffZVar;
+
+  posGlobalOffsetBiasX = config.posGlobalOffsetBiasX;
+  posGlobalOffsetBiasY = config.posGlobalOffsetBiasY;
+  posGlobalOffsetBiasZ = config.posGlobalOffsetBiasZ;
 
   velocityDecayTime = config.velocityDecayTime;
   offsetDecayTime = config.offsetDecayTime;
