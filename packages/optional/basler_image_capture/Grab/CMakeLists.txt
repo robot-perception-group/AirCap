@@ -177,8 +177,8 @@ target_link_libraries(videograb_node
    ${catkin_LIBRARIES}
    pylonbase
    pylonutility
-   GenApi_gcc_v3_0_Basler_pylon_v5_0
-   GCBase_gcc_v3_0_Basler_pylon_v5_0
+   GenApi_gcc_v3_1_Basler_pylon_v5_1
+   GCBase_gcc_v3_1_Basler_pylon_v5_1
 )
 
 target_link_libraries(replay_node
