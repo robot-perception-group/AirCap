@@ -74,22 +74,18 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ```
 
 - For multi agent drl
-- Note! for networks 2.1 and 2.2, the actor has to be static. 
-- Uncomment line 141 "this->velocity  = 0.0;" in file ~/aircalrl/aircap_ws/src/Gazebo_Plugins/ActorPlugin.cc
-- Run make as suggested in STEP 5 above. 
-- Network 2.3 however can operate on a moving actor
 ```
 ./multi_agent_loop.sh 1 test
 ```
 
 
-### 7. Kill all the ros nodes
+### 8. Kill all the ros nodes
 ```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./killswitch 1
 ```
 
-### 7. Test different networks
+### 9. Test different networks
 #### Single Agent:
 
 - Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_singleagent.py
@@ -97,10 +93,10 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 - Currently it is running Network 1.4 >> "test_network14.yaml"
 - Options to change this file :
 ```
--- Network1.1-test_network11.yaml
--- Network1.2-test_network12.yaml
--- Network1.3-test_network13.yaml
--- Network1.4-test_network14.yaml
+-- Network1.1: test_network11.yaml
+-- Network1.2: test_network12.yaml
+-- Network1.3: test_network13.yaml
+-- Network1.4: test_network14.yaml
 ```
 
 #### Multi Agent
@@ -109,13 +105,17 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 - Currently it is running Network 2.3 >> "test_network23.yaml"
 - Options to change this file:
 ```
--- Network2.1-test_network21.yaml
--- Network2.2-test_network22.yaml
--- Network2.3-test_network23.yaml
+-- Network2.1: test_network21.yaml
+-- Network2.2: test_network22.yaml
+-- Network2.3: test_network23.yaml
 ```
+- Note! for networks 2.1 and 2.2, the actor has to be static. 
+- Uncomment line 141 "this->velocity  = 0.0;" in file ~/aircalrl/aircap_ws/src/Gazebo_Plugins/ActorPlugin.cc
+- Run "make" as suggested in STEP 5 above. 
+- Network 2.3 however can operate on a moving actor
 
 
-### 7. View the debug output 
+### 10. View the debug output 
 Each ros node runs in its own screen window in bash.
 
 The screens running are env_$id,envsim_$id and $DRL_Training
