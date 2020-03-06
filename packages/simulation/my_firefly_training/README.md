@@ -47,10 +47,11 @@ source ~/.bashrc && cd
 ```
 
 ## 6. Download trained networks
-'''
 Download all the trained networks from here: https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad
 Extract/Copy the networks into the folder ~/aircaprl/drl_ws/logs
+
 The directory hierarchy should look like:
+
 ~/aircaprl/drl_ws 
 
      | logs
@@ -59,66 +60,73 @@ The directory hierarchy should look like:
             || 1.2
             ...so on
   
-'''
+
 ## 6. startup all nodes and environments
-```
+
 #The following scripts should startup ros nodes, gazebo and drl testing
-# For single agent drl
+- For single agent drl
+#params (in order):
+#<num_envs>
+#<rosbag file name or experiment name (currently option not enabled)>
+```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./single_agent_loop.sh 1 test
-# params (in order):
-# <num_envs>
-# <rosbag file name or experiment name (currently option not enabled)>
+```
 
-# For multi agent drl
+- For multi agent drl
 #Note! for networks 2.1 and 2.2, the actor has to be static. 
 #Uncomment line 141 "this->velocity  = 0.0;" in file ~/aircalrl/aircap_ws/src/Gazebo_Plugins/ActorPlugin.cc
 #Run make as suggested in STEP 5 above. 
 # For network 2.3 can operate on a moving actor
+```
 ./multi_agent_loop.sh 1 test
-# <num_envs>
-# <rosbag file name or experiment name (currently option not enabled)>
 ```
 
+
 ## 7. Kill all nodes
-'''
+```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./killswitch 1
-'''
+```
 
 ## 7. Change Networks
-# Single Agent:
-'''
-#Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_singleagent.py
-#Line 29 has the yaml file pointing to the network parameters. 
-#currently it is running Network 1.4 >> "test_network14.yaml"
-#Options to change this file to 
-#Network1.1-test_network11.yaml
-#Network1.2-test_network12.yaml
-#Network1.3-test_network13.yaml
-#Network1.4-test_network14.yaml
-'''
-# Multi Agent
-#Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_multiagent.py
-#Line 29 has the yaml file pointing to the network parameters. 
-#currently it is running Network 2.3 >> "test_network23.yaml"
-#Options to change this file to 
-#Network2.1-test_network21.yaml
-#Network2.2-test_network22.yaml
-#Network2.3-test_network23.yaml
+### Single Agent:
+
+- Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_singleagent.py
+- Line 29 has the yaml file pointing to the network parameters. 
+- currently it is running Network 1.4 >> "test_network14.yaml"
+- Options to change this file to 
+- Network1.1-test_network11.yaml
+- Network1.2-test_network12.yaml
+- Network1.3-test_network13.yaml
+- Network1.4-test_network14.yaml
+
+### Multi Agent
+- Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_multiagent.py
+- Line 29 has the yaml file pointing to the network parameters. 
+- currently it is running Network 2.3 >> "test_network23.yaml"
+- Options to change this file to 
+- Network2.1-test_network21.yaml
+- Network2.2-test_network22.yaml
+- Network2.3-test_network23.yaml
 
 
 ## 7. DEBUGGING
-'''
 Each ros node runs in its own screen window in bash.
+
 The screens running are env_$id,envsim_$id and $DRL_Training
+
 To access the screens e.g.,:
-# For aircap ros nodes
-$screen -R env_1
-# For aircap ros nodes
+```
+- For aircap ros nodes
+screen -R env_1
+
+- For aircap ros nodes
 $screen -R envsim_1
-# For DRL ros node
+- For DRL ros node
 $screen -R DRL_Training
-#Once you are accessing a screen
-#Switch between different windows in screen using the shortcut ctrl+A+N
-'''
+```
+
+Once you are accessing a screen
+
+Switch between different windows in screen using the shortcut ctrl+A+N
