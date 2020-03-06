@@ -20,9 +20,9 @@ __conda_setup="$('/home/${USER}/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev
  unset __conda_setup
 # <<< conda initialize <<<
 
-cd ~/drl_ws/src/my_firefly_training/src
+cd ~/aircaprl/drl_ws/src/my_firefly_training/src
 conda activate spinningup
-source ~/drl_ws/devel/setup.bash
+source ~/aircaprl/drl_ws/devel/setup.bash
 export ROS_MASTER_URI=http://$ROSIP:11311; export ROS_IP=$ROSIP; export ROS_HOSTNAME=${ROSIP}
 #roslaunch my_firefly_training start_training.launch num_envs:=$NUM_ENVS log_file:=$LOG_PATH robotID:=$ROBOT_ID num_robots:=$NUM_ROBOTS prediction_only:=$PREDICTION
-source ~/drl_ws/devel/setup.bash && python test_singleagent.py $NUM_ENVS $LOG_PATH $ROBOT_ID $NUM_ROBOTS $PREDICTION
+source ~/aircaprl/drl_ws/devel/setup.bash && python test_singleagent.py $NUM_ENVS $LOG_PATH $ROBOT_ID $NUM_ROBOTS $PREDICTION
