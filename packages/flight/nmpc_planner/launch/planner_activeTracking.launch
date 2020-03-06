@@ -70,7 +70,7 @@
 
     <param name="useZeroAsFixedTarget" value="false" type="bool" />
 
-    <rosparam command="load" file="$(find nmpc_planner)/cfg/$(arg obstacles_file)" />
+    <!--rosparam command="load" file="$(find nmpc_planner)/cfg/$(arg obstacles_file)" /-->
 
    </node>
    </group>

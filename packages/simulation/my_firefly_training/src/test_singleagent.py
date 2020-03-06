@@ -28,7 +28,7 @@ LoadYamlFileParamsTest(rospackage_name="my_firefly_training",
                         rel_path_from_package_to_file="config",
                         yaml_file_name="test_network14.yaml")
 
-task_and_robot_environment_name = expanduser('~')+rospy.get_param('task_and_robot_environment_name')
+task_and_robot_environment_name = rospy.get_param('task_and_robot_environment_name')
 num_envs = int(sys.argv[1])
 robotID = int(sys.argv[3])
 num_robots = int(sys.argv[4])
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     env = SubprocVecEnv(envs, start_method='forkserver')    
     print("Gym environment done")
 
-    nw_path = rospy.get_param('neural_nw_path')
+    nw_path = expanduser('~')+rospy.get_param('neural_nw_path')
     assert os.path.exists(nw_path)
     
     '''Load the network parameters to test the network'''
