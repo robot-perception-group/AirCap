@@ -45,7 +45,9 @@ else
 	ln -s $AIRCAP_PATH/packages/simulation/Gazebo_Plugins/ && \
 	ln -s $AIRCAP_PATH/packages/simulation/librepilot_gazebo_bridge/ && \
 	ln -s $AIRCAP_PATH/packages/simulation/random_moving_target/ && \
+	ln -s $AIRCAP_PATH/packages/simulation/alphapose_node/ && \
 	ln -s $DIR$GIT_DIR/rotors_simulator/ 
+ 
 		
 
 	echo "CREATING ROS WORKSPACE FOR AIRCAP"
