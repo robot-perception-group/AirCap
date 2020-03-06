@@ -90,7 +90,7 @@ for env in $(seq 0 $(($NUM_ENVS-1))); do
   	id=$(($i+1))
     echo "Starting AIRCAP for robot $id"
     screen -S env_${env_id} -X screen  bash -i -c "ROS_MASTER_URI=${ROS_MASTER}${env_id}; GAZEBO_MASTER_URI=$GAZEBO_MASTER_ID; ROS_IP=${ROSIP}; ROS_HOSTNAME=${ROSIP};
-    roslaunch mavocap_pipelines simulation.launch robotID:=$id numRobots:=$ROBOS comSuccessRate:=$COMSUCCESSRATE obstacles_number:=$OBS useGTforTarget:=$USEGT useMPC:=true  --screen"
+    roslaunch aircap simulation.launch robotID:=$id numRobots:=$ROBOS comSuccessRate:=$COMSUCCESSRATE obstacles_number:=$OBS useGTforTarget:=$USEGT useMPC:=true  --screen"
     screen -S  env_${env_id} -X title AIRCAP${env_id}_$id
     sleep 2
   done
