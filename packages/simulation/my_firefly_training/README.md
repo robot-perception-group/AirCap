@@ -1,15 +1,9 @@
 
 
 ### 1. Install ros-melodic-desktop-full
+**Link**:
+http://wiki.ros.org/melodic/Installation/Ubuntu
 ```
-# Instructions copied from http://wiki.ros.org/melodic/Installation/Ubuntu
-sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
-sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
-sudo apt update  &&   sudo apt install ros-melodic-desktop-full -y
-sudo rosdep init 
-rosdep update -y
-echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
-source ~/.bashrc
 sudo apt install python-rosinstall python-rosinstall-generator python-wstool build-essential
 ```
 
@@ -19,6 +13,7 @@ git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
 ```
 
 ### 3. Run setup script to download all dependencies for aircap
+Export the path to the git repository you just downloaded as shown below.
 ```
 export AIRCAP_PATH=<path_to_aircap_git_repo>
 cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
@@ -27,7 +22,8 @@ bash aircaprl.sh
 
 ### 4. Setup openAI-gym, stable-baselines and reinforcement learning ros workspace for conda virtual env
 - Note: install anaconda for python 3.7 from https://docs.continuum.io/anaconda/install/linux/ 
-- After anaconda installation the command prompt asks "Do you wish the installer to initialize Anaconda3 by running conda init? [yes|no]" no
+- After anaconda installation the command prompt asks "Do you wish the installer to initialize Anaconda3 by running conda init? [yes|no]" **yes**
+- **in .bashrc file comment lines starting from # >>> conda initialize >>> to # <<< conda initialize <<<**
 ```
 bash setup_drl_ws.sh
 ```
@@ -38,19 +34,23 @@ bash setup_drl_ws.sh
 cd ${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins
 mkdir build && cd build
 cmake ..
-make
+make -j nproc
 ```
-- In bashrc file add the following line:
+- **In bashrc file add the following line**:
 ```
 echo "export GAZEBO_PLUGIN_PATH=${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins/build" >> ~/.bashrc
 source ~/.bashrc && cd
 ```
 
 ### 6. Download the trained networks
-Download all the trained networks from here: https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad
-Extract/Copy the networks into the folder ~/aircaprl/drl_ws/logs
+**Download all the trained networks from here: https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad**
+```
+unzip networks.zip
+mv networks/* ~/aircaprl/drl_ws/logs
+rm -r networks
+```
 
-The directory hierarchy should look like:
+**The directory hierarchy should look like:**
 
 ~/aircaprl/drl_ws 
 
@@ -64,7 +64,7 @@ The directory hierarchy should look like:
 ### 7. Startup all the ros nodes and the gazebo test environment
 
 #The following scripts should startup ros nodes, gazebo and drl testing
-
+#**It may take sometime to start gazebo for first time so be patient :)** 
 #To start script the format is as follows
 #script.sh  <num_envs> <rosbag file name or experiment name (currently option not enabled)>
 - For single agent drl
@@ -82,7 +82,7 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ### 8. Kill all the ros nodes
 ```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
-./killswitch 1
+./killswitch.sh 1
 ```
 
 ### 9. Test different networks

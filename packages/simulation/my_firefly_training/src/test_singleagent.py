@@ -14,7 +14,7 @@ import gym
 from stable_baselines.common.vec_env import SubprocVecEnv
 from stable_baselines import PPO2
 from stable_baselines.bench import Monitor
-
+from os.path import expanduser
 
 '''
 ########## LOAD NETWORK HERE ########################
@@ -28,7 +28,7 @@ LoadYamlFileParamsTest(rospackage_name="my_firefly_training",
                         rel_path_from_package_to_file="config",
                         yaml_file_name="test_network14.yaml")
 
-task_and_robot_environment_name = rospy.get_param('task_and_robot_environment_name')
+task_and_robot_environment_name = expanduser('~')+rospy.get_param('task_and_robot_environment_name')
 num_envs = int(sys.argv[1])
 robotID = int(sys.argv[3])
 num_robots = int(sys.argv[4])

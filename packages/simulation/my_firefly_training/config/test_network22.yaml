@@ -1,6 +1,6 @@
 task_and_robot_environment_name: 'MultiAgentEvaluation-v0'
 num_envs: 1
-neural_nw_path: "/home/rtallamraju/logs/2.2/best_model.pkl"
+neural_nw_path: "/aircaprl/drl_ws/logs/2.2/best_model.pkl"
 
 
 
