@@ -126,9 +126,9 @@ To access the screens e.g.,:
 screen -R env_1
 
 - For aircap ros nodes
-$screen -R envsim_1
+screen -R envsim_1
 - For DRL ros node
-$screen -R DRL_Training
+screen -R DRL_Training
 ```
 
 Once you are accessing a screen
