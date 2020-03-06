@@ -1,6 +1,6 @@
 
 
-## 1. install ros-melodic-desktop-full
+## 1. Install ros-melodic-desktop-full
 ```
 # Instructions copied from http://wiki.ros.org/melodic/Installation/Ubuntu
 sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
@@ -13,12 +13,12 @@ source ~/.bashrc
 sudo apt install python-rosinstall python-rosinstall-generator python-wstool build-essential
 ```
 
-## 2. clone aircaprl repository
+## 2. Clone aircaprl repository
 ```
 git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
 ```
 
-## 3. setup script to download all dependencies for aircap
+## 3. Setup script to download all dependencies for aircap
 ```
 export AIRCAP_PATH=<path_to_aircap_git_repo>
 cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
@@ -61,11 +61,11 @@ The directory hierarchy should look like:
             ...so on
   
 
-## 6. startup all nodes and environments
+## 6. Startup all nodes and environments
 
 #The following scripts should startup ros nodes, gazebo and drl testing
 
-#FORMAT
+#To start script the format is as follows
 #script.sh  <num_envs> <rosbag file name or experiment name (currently option not enabled)>
 - For single agent drl
 ```
@@ -115,7 +115,7 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ```
 
 
-## 7. DEBUGGING
+## 7. Debugging
 Each ros node runs in its own screen window in bash.
 
 The screens running are env_$id,envsim_$id and $DRL_Training
