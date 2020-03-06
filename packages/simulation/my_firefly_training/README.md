@@ -18,21 +18,21 @@ sudo apt install python-rosinstall python-rosinstall-generator python-wstool bui
 git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
 ```
 
-### 3. Setup script to download all dependencies for aircap
+### 3. Run setup script to download all dependencies for aircap
 ```
 export AIRCAP_PATH=<path_to_aircap_git_repo>
 cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
 bash aircaprl.sh
 ```
 
-### 4. Setup OpenAI-gym, stable-baselines and reinforcement learning ros workspace for conda virtual env
+### 4. Setup openAI-gym, stable-baselines and reinforcement learning ros workspace for conda virtual env
 - Note: install anaconda for python 3.7 from https://docs.continuum.io/anaconda/install/linux/ 
 - After anaconda installation the command prompt asks "Do you wish the installer to initialize Anaconda3 by running conda init? [yes|no]" no
 ```
 bash setup_drl_ws.sh
 ```
 
-### 5. Build Actor Plugin
+### 5. Build the actor plugin
 
 ```
 cd ${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins
@@ -46,7 +46,7 @@ echo "export GAZEBO_PLUGIN_PATH=${AIRCAP_PATH}/packages/simulation/Gazebo_Plugin
 source ~/.bashrc && cd
 ```
 
-### 6. Download trained networks
+### 6. Download the trained networks
 Download all the trained networks from here: https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad
 Extract/Copy the networks into the folder ~/aircaprl/drl_ws/logs
 
@@ -61,7 +61,7 @@ The directory hierarchy should look like:
             ...so on
   
 
-### 7. Startup all nodes and environments
+### 7. Startup all the ros nodes and the gazebo test environment
 
 #The following scripts should startup ros nodes, gazebo and drl testing
 
@@ -83,13 +83,13 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ```
 
 
-### 7. Kill all nodes
+### 7. Kill all the ros nodes
 ```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./killswitch 1
 ```
 
-### 7. Change Networks
+### 7. Test different networks
 #### Single Agent:
 
 - Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_singleagent.py
@@ -115,7 +115,7 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ```
 
 
-### 7. Debugging
+### 7. View the debug output 
 Each ros node runs in its own screen window in bash.
 
 The screens running are env_$id,envsim_$id and $DRL_Training
