@@ -26,6 +26,16 @@ GZ_REGISTER_MODEL_PLUGIN(ActorPlugin)
 
 #define WALKING_ANIMATION "walking"
 
+// ros actor groundtruth publisher definition
+
+
+ros::NodeHandle n;
+
+ros::Publisher actorposePub = n.advertise<nav_msgs::Odometry>("actorpose", 1000);
+
+ros::Rate loop_rate(10);
+nav_msgs::Odometry actorPose;
+
 /////////////////////////////////////////////////
 ActorPlugin::ActorPlugin()
 {
@@ -34,6 +44,9 @@ ActorPlugin::ActorPlugin()
 /////////////////////////////////////////////////
 void ActorPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 {
+  int argc; char **argv;
+  // ros::init(argc, argv,"actorpose_node"); //initialize actor pose node
+
   this->sdf = _sdf;
   this->actor = boost::dynamic_pointer_cast<physics::Actor>(_model);
   this->world = this->actor->GetWorld();
@@ -80,14 +93,14 @@ void ActorPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 /////////////////////////////////////////////////
 void ActorPlugin::Reset()
 {
-  this->velocity = 0.8;
+  this->velocity = 1.4;
   this->lastUpdate = 0;
   this->start = this->world->SimTime().Double();
 
-  if (this->sdf && this->sdf->HasElement("target"))
-    this->target = this->sdf->Get<ignition::math::Vector3d>("target");
-  else
-    this->target = ignition::math::Vector3d(0, 0, 1.2138);
+  // if (this->sdf && this->sdf->HasElement("target"))
+  //   this->target = this->sdf->Get<ignition::math::Vector3d>("target");
+  // else
+    this->target = ignition::math::Vector3d(0, 0, walking_height);
 
   auto skelAnims = this->actor->SkeletonAnimations();
   if (skelAnims.find(WALKING_ANIMATION) == skelAnims.end())
@@ -110,10 +123,11 @@ void ActorPlugin::ChooseNewTarget()
 {
   duration = ( this->world->SimTime().Double() - this->start ) ;
   ignition::math::Vector3d newTarget(this->target);
-  if (duration < 50)
+  if (duration < 5)
   {
     newTarget.X(0) ;
     newTarget.Y(0) ;
+    newTarget.Z(walking_height) ;
     if ((newTarget - this->target).Length() < 1.0)
     {
        this->velocity = 0.01;
@@ -123,13 +137,20 @@ void ActorPlugin::ChooseNewTarget()
   {
   while ((newTarget - this->target).Length() < 2.0)
   {
-    this->velocity  = 0.8;
-    // newTarget.X(ignition::math::Rand::DblUniform(-3, 3.5));
-    // newTarget.Y(ignition::math::Rand::DblUniform(-10, 2));
-    newTarget.X(x_waypoints[counter % x_waypoints.size()]);
-    newTarget.Y(y_waypoints[counter % y_waypoints.size()]);
-    newTarget.Z(1.0+heightMapZ(newTarget.X(),newTarget.Y()));
-    // printf("x:%f,y:%f,z:%f\n",newTarget.X(),newTarget.Y(),newTarget.Z());
+    this->velocity  = 0.0;
+    // this->velocity  = abs(ignition::math::Rand::DblNormal(1.4, 1));
+    newTarget.X(ignition::math::Rand::DblUniform(-10, 10));
+    newTarget.Y(ignition::math::Rand::DblUniform(-10, 10));
+//     newTarget.X(x_waypoints[counter % x_waypoints.size()]);
+//     newTarget.Y(y_waypoints[counter % y_waypoints.size()]);
+
+    if(this->USE_HEIGHT_MAP){
+      newTarget.Z(1.0+heightMapZ(newTarget.X(),newTarget.Y()));
+      }
+    else {
+      newTarget.Z(walking_height);
+    }
+
     counter  = counter + 1;
 
     for (unsigned int i = 0; i < this->world->ModelCount(); ++i)
@@ -199,14 +220,53 @@ void ActorPlugin::OnUpdate(const common::UpdateInfo &_info)
   double dt = (_info.simTime - this->lastUpdate).Double();
 
   ignition::math::Pose3d pose = this->actor->WorldPose();
+  ignition::math::Pose3d tf_pose = this->actor->WorldPose();
+  // printf("%f\n",this->actor->GetChildLink(this->actor->GetChild(10)->GetName())->WorldPose().Pos().Y());
+
   ignition::math::Vector3d pos = this->target - pose.Pos();
   ignition::math::Vector3d rpy = pose.Rot().Euler();
+  ignition::math::Vector3d applied_control = this->target - pose.Pos();
+
+
+  transformStamped.header.stamp = ros::Time::now();
+  transformStamped.header.frame_id = "world";
+  transformStamped.child_frame_id = "actor::actor_pose";
+  transformStamped.transform.translation.x = pose.Pos().X();
+  transformStamped.transform.translation.y = pose.Pos().Y();
+  transformStamped.transform.translation.z = pose.Pos().Z();
+  transformStamped.transform.rotation.x = 0;
+  transformStamped.transform.rotation.y = 0;
+  transformStamped.transform.rotation.z = 0;
+  transformStamped.transform.rotation.w = 1;
+
+  br.sendTransform(transformStamped);
+  // printf("%d\n",(this->actor->GetChildCount()));
+  for(int k=0; k< this->actor->GetChildCount(); k++)
+  {
+    // printf("k:%d\n",k);
+    // printf("%d\n",(this->actor->GetChild(k)->GetName()).compare("actor_pose"));
+    if ((this->actor->GetChild(k)->GetName()).compare("actor_pose")!=0)
+    {
+    physics::LinkPtr currentLink = this->actor->GetChildLink(this->actor->GetChild(k)->GetName());
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "actor::actor_pose";
+    transformStamped.child_frame_id = "actor::"+this->actor->GetChild(k)->GetName();
+    transformStamped.transform.translation.x = currentLink->WorldPose().Pos().X();
+    transformStamped.transform.translation.y = currentLink->WorldPose().Pos().Y();
+    transformStamped.transform.translation.z = currentLink->WorldPose().Pos().Z();
+    transformStamped.transform.rotation.x = currentLink->WorldPose().Rot().X();
+    transformStamped.transform.rotation.y = currentLink->WorldPose().Rot().Y();
+    transformStamped.transform.rotation.z = currentLink->WorldPose().Rot().Z();
+    transformStamped.transform.rotation.w = currentLink->WorldPose().Rot().W();
+    br.sendTransform(transformStamped);
+    }    // printf("%s\n",this->actor->GetChild(k)->GetName().c_str());
+  }
 
   double distance = pos.Length();
 
   // Choose a new target position if the actor has reached its current
   // target.
-  if (distance < 2)
+  if (distance < 1)
   {
     this->ChooseNewTarget();
     pos = this->target - pose.Pos();
@@ -223,22 +283,54 @@ void ActorPlugin::OnUpdate(const common::UpdateInfo &_info)
   yaw.Normalize();
 
   // Rotate in place, instead of jumping.
-  // if (std::abs(yaw.Radian()) > IGN_DTOR(10))
-  // {
-  //   pose.Rot() = ignition::math::Quaterniond(1.5707, 0, rpy.Z()+
-  //       yaw.Radian()*0.001);
-  // }
-  // else
-  // {
+  if (std::abs(yaw.Radian()) > IGN_DTOR(10))
+  {
+    pose.Rot() = ignition::math::Quaterniond(1.5707, 0, rpy.Z()+
+        yaw.Radian()*0.1);
+  }
+  else
+  {
+//     printf("Velocity:%f\n",this->velocity);
     pose.Pos() += pos * this->velocity * dt;
     pose.Rot() = ignition::math::Quaterniond(1.5707, 0, rpy.Z()+yaw.Radian());
-  // }
-
+  }
+//   printf("Yaw:%f\n",yaw.Radian());
   // Make sure the actor stays within bounds
+
   pose.Pos().X(std::max(-20.0, std::min(20.0, pose.Pos().X())));
   pose.Pos().Y(std::max(-20.0, std::min(20.0, pose.Pos().Y())));
-  pose.Pos().Z(1.0+heightMapZ(pose.Pos().X(),pose.Pos().Y()));
-  // pose.Pos().Z(1.2138);
+  if (this->USE_HEIGHT_MAP){
+    pose.Pos().Z(1.0+heightMapZ(pose.Pos().X(),pose.Pos().Y()));
+  }
+  else{
+    pose.Pos().Z(walking_height);
+  }
+
+  // pose.Pos().Y(0);
+  // pose.Pos().Z(std::max(-30.0, std::min(30.0, pose.Pos().Z())));
+
+  //
+
+
+  //ros publish groundtruth position
+  actorPose.pose.pose.position.x =  pose.Pos().Y(); //X is -Y HACK - coordinate transforms
+  actorPose.pose.pose.position.y =  pose.Pos().X(); //Y is X HACK - coordinate transforms
+  actorPose.pose.pose.position.z = -pose.Pos().Z(); // Z is -Z
+  actorPose.pose.pose.orientation.x = pose.Rot().X();
+  actorPose.pose.pose.orientation.y = pose.Rot().Y();
+  actorPose.pose.pose.orientation.z = pose.Rot().Z();
+  actorPose.pose.pose.orientation.w = pose.Rot().W();
+  actorPose.header.stamp = ros::Time::now();
+  actorPose.header.frame_id = "world";
+
+  applied_control = pos * this->velocity;
+  //ros publish groundtruth position
+  actorPose.twist.twist.linear.x =  applied_control.Y(); //X is Y HACK - coordinate transforms
+  actorPose.twist.twist.linear.y =  applied_control.X(); //Y is X HACK - coordinate transforms
+  actorPose.twist.twist.linear.z =  -applied_control.Z(); // Z is -Z
+
+
+  actorposePub.publish(actorPose);
 
   // Distance traveled is used to coordinate motion with the walking
   // animation

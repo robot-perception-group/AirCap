@@ -373,7 +373,7 @@ void Planner::avoidTeamMates()
                 double potentialForce_repulsive = getPotential(neighborDist,4,1,50);
                 totalVel += force_clamping(potentialForce_repulsive * posDiffUnit );
                 Eigen::Vector3d temp = force_clamping(potentialForce_repulsive * posDiffUnit);
-                ROS_INFO("repulsive potential x= %f, y= %f, z=%f ",temp(0),temp(1),temp(2));
+                // ROS_INFO("repulsive potential x= %f, y= %f, z=%f ",temp(0),temp(1),temp(2));
 
 
               }
@@ -744,12 +744,12 @@ void Planner::selfPoseCallbackRealRobot(const uav_msgs::uav_pose::ConstPtr& msg,
 
     //now the cost weights limits
     //column1: stage cost... column 2 terminal cost... last 3 rows for input cost.. last 3 rows second column is free for now
-    costWeight(0,0) = 0;    costWeight(0,1) = 1000;
-    costWeight(1,0) = 0;    costWeight(1,1) = 1000;
-    costWeight(2,0) = 0;    costWeight(2,1) = 1000;
-    costWeight(3,0) = 0;    costWeight(3,1) = 1000;
-    costWeight(4,0) = 0;    costWeight(4,1) = 1000;
-    costWeight(5,0) = 0;    costWeight(5,1) = 1000;
+    costWeight(0,0) = 0;    costWeight(0,1) = 100;
+    costWeight(1,0) = 0;    costWeight(1,1) = 100;
+    costWeight(2,0) = 0;    costWeight(2,1) = 100;
+    costWeight(3,0) = 0;    costWeight(3,1) = 100;
+    costWeight(4,0) = 0;    costWeight(4,1) = 100;
+    costWeight(5,0) = 0;    costWeight(5,1) = 100;
     costWeight(6,0) = 0;    costWeight(6,1) = 0;
     costWeight(7,0) = 0;    costWeight(7,1) = 0;
     costWeight(8,0) = 0;    costWeight(8,1) = 0;
@@ -959,16 +959,16 @@ void Planner::selfPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::C
 
     input_limits(0,0) = -5; input_limits(0,1) = 5;
     input_limits(1,0) = -5; input_limits(1,1) = 5;
-    input_limits(2,0) = -2; input_limits(2,1) = 2;
+    input_limits(2,0) = -5; input_limits(2,1) = 5;
 
     //now the cost weights limits
     //column1: stage cost... column 2 terminal cost... last 3 rows for input cost.. last 3 rows second column is free for now
-    costWeight(0,0) = 0;    costWeight(0,1) = 1000;
-    costWeight(1,0) = 0;    costWeight(1,1) = 1000;
-    costWeight(2,0) = 0;    costWeight(2,1) = 1000;
-    costWeight(3,0) = 0;    costWeight(3,1) = 1000;
-    costWeight(4,0) = 0;    costWeight(4,1) = 1000;
-    costWeight(5,0) = 0;    costWeight(5,1) = 1000;
+    costWeight(0,0) = 0;    costWeight(0,1) = 100;
+    costWeight(1,0) = 0;    costWeight(1,1) = 100;
+    costWeight(2,0) = 0;    costWeight(2,1) = 100;
+    costWeight(3,0) = 0;    costWeight(3,1) = 100;
+    costWeight(4,0) = 0;    costWeight(4,1) = 100;
+    costWeight(5,0) = 0;    costWeight(5,1) = 100;
     costWeight(6,0) = 0;    costWeight(6,1) = 0;
     costWeight(7,0) = 0;    costWeight(7,1) = 0;
     costWeight(8,0) = 0;    costWeight(8,1) = 0;
@@ -978,9 +978,9 @@ void Planner::selfPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::C
     costWeight(12,0) = 0;    costWeight(12,1) = 0;
     costWeight(13,0) = 0;    costWeight(13,1) = 0;
     costWeight(14,0) = 0;    costWeight(14,1) = 0;
-    costWeight(15,0) = 0.1;    costWeight(15,1) = 0;
-    costWeight(16,0) = 0.1;    costWeight(16,1) = 0;
-    costWeight(17,0) = 0.1;    costWeight(17,1) = 0;
+    costWeight(15,0) = 10;    costWeight(15,1) = 0;
+    costWeight(16,0) = 10;    costWeight(16,1) = 0;
+    costWeight(17,0) = 10;    costWeight(17,1) = 0;
 
 
     StateInput = solveMPC.OCPsolDesigner(deltaT, ExtForce, cur_state, ref_path, term_state, costWeight, state_limits, input_limits);

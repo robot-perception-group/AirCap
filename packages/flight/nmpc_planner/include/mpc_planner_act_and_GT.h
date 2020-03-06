@@ -19,6 +19,7 @@
 #include <geometry_msgs/QuaternionStamped.h>
 #include <sensor_msgs/Imu.h>
 #include <uav_msgs/uav_pose.h>
+#include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 
 #include <boost/bind.hpp>
@@ -142,17 +143,14 @@ class Planner
 
   string outputPoseTopic;
   string timeTopic;
-  // string virtualDestinationTopic;
-  // string uavSelfIMUTopic;
-  // string HexaMotorCommandsTopic;
-  // string selfNMPCStatusTopic;
+
   string objectGTTopic;
   string objectGTVelTopic;
   string objectEstimatedTopic;
   string objectEstimatedVelTopic;
   string targetDetection;
   string obstacleTopicBase;
-
+  string drlTargetTopic;
 
   Subscriber subSelfPose_;//,subVirtualDestination_,subSelfIMU_;
   vector<Subscriber> subMatePose_;
@@ -164,7 +162,7 @@ class Planner
   Subscriber subObjectEstimatedVel_;
   Subscriber subObjectDetection_;
   Subscriber subUavOffset_;
-
+  Subscriber subDest_;
 
   Publisher pubOutPoseSelf_, pub_HexaMotorCommands_;
   Publisher pubTimeMPC_;
@@ -173,18 +171,18 @@ class Planner
   Publisher pubOutPose_;
   Publisher pubSelfPoseTraj_;
 
-
   //uav_msgs::uav_pose selfPose;
   geometry_msgs::PoseWithCovarianceStamped selfPose;
   geometry_msgs::PoseArray selfPoseTraj;
   geometry_msgs::PoseWithCovarianceStamped selfOffset;
-  geometry_msgs::PoseWithCovarianceStamped targetObjectGTPose;
+  nav_msgs::Odometry targetObjectGTPose;
   geometry_msgs::TwistWithCovarianceStamped targetObjectGTVelocity;
   geometry_msgs::PoseWithCovarianceStamped targetObjectEstimatedPose;
   geometry_msgs::TwistWithCovarianceStamped targetObjectEstimatedVelocity;
   // sensor_msgs::Imu selfIMUReading;
   geometry_msgs::PoseStamped matePose;
   geometry_msgs::PoseWithCovarianceStamped targetDetectionMsg;
+  geometry_msgs::PoseStamped destCommand;
 
   std_msgs::Float32 time_msg;
   bool heardFromMate;
@@ -233,19 +231,12 @@ class Planner
 
   //Define Covariance Matrices
   Matrix2d selfCovariance = Matrix2d::Zero();
-  //mav_msgs::MotorSpeed outputSpeed;
 
   // std::vector<double> obstacles_x = {-9,  -9, 9,   9,-8, -8, 2, 6, 8.5, 4,   5, 12, 0, -5};
   // std::vector<double> obstacles_y = { 0, 1.4, 0, 1.4, 6,7.4, 0, 7, 7,-9, -10.4, 10, 5, -5};
   // std::vector<double> obstacles_x = {-14,-15,13,13,-12,-10,-2,3,4,8,12,0,-5};
   // std::vector<double> obstacles_y = {-7,-3.5,-3,3,6,10,9,9.5,-9,-9,10,5,-7};
   // int obstacles_length = 13;
-
-
-  //NMPC related variables
-  //SmartPtr<NMPC_IPOPT> mynlp;
-  //SmartPtr<IpoptApplication> app;
-  //ApplicationReturnStatus status;
 
 
   bool targetEstimationIsActive; // this is a failsafe bool. Until target estimator is active, planner can work on the GT estimate (in real robots this can be set to origin)
@@ -267,6 +258,7 @@ class Planner
   double INTERNAL_SUB_STEP;
 
   bool usingSimulation;
+  bool usingDRLTracking;
   bool POINT_OBSTACLES;
   bool useGTforTarget; // if this is true, NMPC will use GT of the target for feeding into the planner.
   bool useZeroAsFixedTarget; // use this when testing without real target in the real robot setting
@@ -319,7 +311,7 @@ class Planner
 
   float r;
 
-  float x1, y1, x2,y2, x3, y3, x4, y4, z4, theta, vx4, vy4 ;
+  float x1, y1, x2,y2, x3, y3, z3, x4, y4, z4, theta, vx4, vy4 ;
 
   //for all three solvers some values are fixed or are initialized
   MPCsolver solveMPC;
@@ -347,8 +339,6 @@ class Planner
 
       total_ang_force = 0;
 
-      ///@hack for now... fix it as per yuyi's plan
-      //deltaT = 0.1; for simulation was 0.1 and real robots 0.01
       heardFromMate = false;
       targetDetected = false;
       targetEstimationIsActive = true; // target estimation might not have started yet.
@@ -372,12 +362,14 @@ class Planner
       nh->getParam("objectGTVelTopic", objectGTVelTopic);
       nh->getParam("objectEstimatedTopic", objectEstimatedTopic); // self estimate
       nh->getParam("objectEstimatedVelTopic", objectEstimatedVelTopic); // self estimate
+      nh->getParam("drlTargetTopic", drlTargetTopic); // output dest from DRL
       nh->getParam("uavOffsetTopic",uavOffsetTopic);
       nh->getParam("NMPC_timesteps", NMPC_timesteps);
       nh->getParam("useGTforTarget", useGTforTarget);
       nh->getParam("targetDetection", targetDetection);
       nh->getParam("obstacleTopicBase", obstacleTopicBase);
       nh->getParam("usingSimulation", usingSimulation);
+      nh->getParam("usingDRLTracking", usingDRLTracking);
       nh->getParam("POINT_OBSTACLES", POINT_OBSTACLES);
       nh->getParam("useZeroAsFixedTarget", useZeroAsFixedTarget);
 
@@ -444,29 +436,23 @@ class Planner
 	  // ROS_INFO("Debugging");
       pubSelfPoseTraj_ = nh->advertise<geometry_msgs::PoseArray>(uavPoseTrajTopic+boost::lexical_cast<string>(selfID_)+uavPoseTrajTopicSuffix,1000);
 
-      // subSelfPose_ = nh->subscribe<geometry_msgs::PoseWithCovarianceStamped>(uavPoseTopic+boost::lexical_cast<string>(selfID_)+uavPoseTopicSuffix, 1000, boost::bind(&Planner::selfPoseCallback,this, _1,selfID_));
-
       subSelfPose_ = nh->subscribe<uav_msgs::uav_pose>(uavPoseTopic+boost::lexical_cast<string>(selfID_)+uavPoseTopicSuffix, 3, boost::bind(&Planner::selfPoseCallback,this, _1,selfID_));
 
       subUavOffset_ = nh->subscribe<geometry_msgs::PoseWithCovarianceStamped>(uavOffsetTopic, 3, boost::bind(&Planner::selfOffsetCallback,this, _1,selfID_));
 
-
-
       subSelfObstacles_ = nh->subscribe<geometry_msgs::PoseArray>(obstacleTopicBase, 1000, boost::bind(&Planner::updateObstaclesCallback,this, _1,selfID_));
 
-      // subSelfIMU_ =  nh->subscribe<sensor_msgs::Imu>(uavSelfIMUTopic, 1000, boost::bind(&Planner::selfIMUCallback,this, _1));
+      subDest_ = nh->subscribe<geometry_msgs::PoseStamped>(uavPoseTopic+boost::lexical_cast<string>(selfID_)+drlTargetTopic, 100, boost::bind(&Planner::storeLatestDestination,this, _1));
 
-      // subObjectGT_ = nh->subscribe<geometry_msgs::PoseStamped>("/actorpose", 100,boost::bind(&Planner::storeLatestTargetGTPose,this,_1));
+      if (useGTforTarget){
 
-	    subObjectGT_ = nh->subscribe<geometry_msgs::PoseWithCovarianceStamped>(objectGTTopic, 1000,boost::bind(&Planner::storeLatestTargetGTPose,this,_1));
+        subObjectGT_ = nh->subscribe<nav_msgs::Odometry>(objectGTTopic, 100,boost::bind(&Planner::storeLatestTargetGTPose,this,_1));
 
-      subObjectGTVel_ = nh->subscribe<geometry_msgs::TwistWithCovarianceStamped>(objectGTVelTopic, 1000,boost::bind(&Planner::storeLatestTargetGTVelocity,this,_1));
-
-      subObjectEstimated_ = nh->subscribe<geometry_msgs::PoseWithCovarianceStamped>(objectEstimatedTopic, 1000,boost::bind(&Planner::storeLatestTargetEstimatedPose,this,_1));
-
+      }
+      else{
+	    subObjectEstimated_ = nh->subscribe<geometry_msgs::PoseWithCovarianceStamped>(objectEstimatedTopic, 1000,boost::bind(&Planner::storeLatestTargetEstimatedPose,this,_1));
       subObjectEstimatedVel_ = nh->subscribe<geometry_msgs::TwistWithCovarianceStamped>(objectEstimatedVelTopic, 1000,boost::bind(&Planner::storeLatestTargetEstimatedVelocity,this,_1));
-
-      // subObjectDetection_ = nh->subscribe<geometry_msgs::PoseWithCovarianceStamped>(targetDetection, 1000,boost::bind(&Planner::targetPosCov,this,_1));
+      }
 
 
       for(int i=1; i<=numRobots; i++)
@@ -488,10 +474,7 @@ class Planner
         }
 
       }
-      // pubNMPCStatus_ = nh->advertise<std_msgs::Int8>(selfNMPCStatusTopic,100); // only for self
 
-      // outPoseRviz_pub = nh->advertise<geometry_msgs::PoseStamped>("outPoseRviz_robot"+boost::lexical_cast<string>(selfID_),100);
-      // outPoseModifiedRviz_pub = nh->advertise<geometry_msgs::PoseStamped>("outPoseModifiedRviz_robot"+boost::lexical_cast<string>(selfID_),100);
 
       iniThrust = 0.0;
       RefMatrix = Matrix3D::Zero();
@@ -542,19 +525,21 @@ class Planner
 
     void matePoseTrajectoryCallback(const geometry_msgs::PoseArray::ConstPtr&, int);
 
-    void storeLatestTargetGTPose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);  //fused pose estimate
+    // void storeVirtualDestination(const geometry_msgs::Pose::ConstPtr&);
 
-    void storeLatestTargetGTVelocity(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr&); //fused velocity estimate
+    void storeLatestTargetGTPose(const nav_msgs::Odometry::ConstPtr&);  //GT target pose
 
-    void storeLatestTargetEstimatedPose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&); //self pose estimate
+    void storeLatestTargetGTVelocity(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr&); //GT target velocity
 
-    void storeLatestTargetEstimatedVelocity(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr&); //self velocity estimate
+    void storeLatestTargetEstimatedPose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&); //fused pose estimate
+
+    void storeLatestTargetEstimatedVelocity(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr&); //fused velocity estimate
+
+    void storeLatestDestination(const geometry_msgs::PoseStamped::ConstPtr&);
 
     void targetPosCov(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
 
     void updateObstaclesCallback(const geometry_msgs::PoseArray::ConstPtr&, int);
-
-    // void selfIMUCallback(const sensor_msgs::Imu::ConstPtr&);
 
     void avoidTeamMates_byComputingExtForce();
 

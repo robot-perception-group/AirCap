@@ -11,15 +11,18 @@ import sys
 #from cv_bridge import CvBridge, CvBridgeError
 #from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PoseWithCovarianceStamped, Pose, PoseStamped
+from nav_msgs.msg import Odometry
 from uav_msgs.msg import uav_pose
 from dynamic_reconfigure.server import Server
 from librepilot_gazebo_bridge.cfg import FakeOffsetParamsConfig
 
 robotnum=sys.argv[1]
+useGTforTarget=sys.argv[2]
 namespace="/machine_"+robotnum+"/"
 fireflynamespace="/firefly_"+robotnum+"/"
 fireflyposetopic=fireflynamespace+"ground_truth/pose"
 fireflycommandtopic="/waypoint_firefly_"+robotnum
+fireflyvelocitytopic=fireflynamespace+"ground_truth/odometry"
 commandtopic=namespace+"command"
 offsettopic=namespace+"target_tracker/offset"
 fakeoffsettopic=namespace+"target_tracker/offsetgroundtruth"
@@ -48,29 +51,42 @@ def commandcallback(command):
   global offsetY
   global offsetZ
   global fakeoffset
-  command.POI.x-=offsetX #substract offset
-  command.POI.y-=offsetY
-  command.POI.z-=offsetZ
-  command.POI.x-=fakeoffset[0]
-  command.POI.y-=fakeoffset[1]
-  command.POI.z-=fakeoffset[2]
-  # attention: waypoint_publisher does a coordinate system rotation, but incorrectly!
-  # gazebo internally uses EAST-NORTH-UP
-  # waypoint_publisher assumes world is EAST-SOUTH-DOWN and swaps sign on y and z axis
-  # world really is NORTH-EAST-UP, so we additionally need to swap x and y axis
-  x = command.POI.x
-  command.POI.x=command.POI.y
-  command.POI.y=-x
-  command.position.x-=offsetX #substract offset
-  command.position.y-=offsetY
-  command.position.z-=offsetZ
-  command.position.x-=fakeoffset[0]
-  command.position.y-=fakeoffset[1]
-  command.position.z-=fakeoffset[2]
-  x = command.position.x
-  command.position.x=command.position.y
-  command.position.y=-x
+  if not useGTforTarget:
+      command.POI.x-=offsetX #substract offset
+      command.POI.y-=offsetY
+      command.POI.z-=offsetZ
+      command.POI.x-=fakeoffset[0]
+      command.POI.y-=fakeoffset[1]
+      command.POI.z-=fakeoffset[2]
+      # attention: waypoint_publisher does a coordinate system rotation, but incorrectly!
+      # gazebo internally uses EAST-NORTH-UP
+      # waypoint_publisher assumes world is EAST-SOUTH-DOWN and swaps sign on y and z axis
+      # world really is NORTH-EAST-UP, so we additionally need to swap x and y axis
+      x = command.POI.x
+      command.POI.x=command.POI.y
+      command.POI.y=-x
+      command.position.x-=offsetX #substract offset
+      command.position.y-=offsetY
+      command.position.z-=offsetZ
+      command.position.x-=fakeoffset[0]
+      command.position.y-=fakeoffset[1]
+      command.position.z-=fakeoffset[2]
+      x = command.position.x
+      command.position.x=command.position.y
+      command.position.y=-x
+
+  else:
+      x = command.position.x
+      command.position.x=command.position.y
+      command.position.y=-x
+
+      x = command.POI.x
+      command.POI.x=command.POI.y
+      command.POI.y=-x
+
   command_pub.publish(command)
+
+
 
 sequence =0
 
@@ -85,6 +101,13 @@ fakevel=[ (fakedest[0]-fakeoffset[0])/acc_velocity_timer, (fakedest[1]-fakeoffse
 lasttime=rospy.Time.now()
 legtime=0
 
+uavpose = uav_pose()
+
+def velocitycallback(vel):
+    velocity = vel
+    uavpose.velocity.x = velocity.twist.twist.linear.y
+    uavpose.velocity.y = velocity.twist.twist.linear.x
+    uavpose.velocity.z = -velocity.twist.twist.linear.z
 
 def posecallback(pose):
   global offsetX
@@ -100,7 +123,7 @@ def posecallback(pose):
   global lasttime
   global legtime
 
-  uavpose = uav_pose()
+
   uavpose.header.seq=sequence
   sequence+=1
   uavpose.header.stamp=rospy.Time.now()
@@ -112,15 +135,17 @@ def posecallback(pose):
   e0 = tf.transformations.euler_from_quaternion(q0)
   q1=tf.transformations.quaternion_from_euler(e0[0],e0[1],e0[2]+(math.pi/2.0) )
 
-  uavpose.orientation.x=q1[0]
-  uavpose.orientation.y=q1[1]
-  uavpose.orientation.z=q1[2]
-  uavpose.orientation.w=q1[3]
-  uavpose.velocity.x=0.0
-  uavpose.velocity.y=0.0
-  uavpose.velocity.z=0.0
-  uavpose.POI=uavpose.velocity
-  uavpose.angVelocity=uavpose.velocity
+  #uavpose.orientation.x=q1[0]
+  #uavpose.orientation.y=q1[1]
+  #uavpose.orientation.z=q1[2]
+  #uavpose.orientation.w=q1[3]
+  uavpose.orientation=pose.orientation
+  uavpose.POI.x = 0.0
+  uavpose.POI.y = 0.0
+  uavpose.POI.z = 0.0
+  uavpose.angVelocity.x = 0.0
+  uavpose.angVelocity.y = 0.0
+  uavpose.angVelocity.z = 0.0
   uavpose.flightmode=0
   uavpose.thrust=0.0
   uavpose.covariance= [0.06,0,0, 0,0,0, 0,0,0,0,   0,0.06,0, 0,0,0, 0,0,0,0,   0,0,0.01, 0,0,0, 0,0,0,0,   0,0,0, 0,0,0, 0,0,0,0,   0,0,0, 0,0,0, 0,0,0,0,   0,0,0, 0,0,0, 0,0,0,0,   0,0,0, 0,0,0, 1e-6,0,0,0,   0,0,0, 0,0,0, 0,1e-5,0,0,   0,0,0, 0,0,0, 0,0,1e-5,0,   0,0,0, 0,0,0, 0,0,0,1e-5] # fake covariance, see below for example of real one
@@ -162,28 +187,39 @@ def posecallback(pose):
 
   truth_pub.publish(uavpose)
 
-  uavpose.position.x+=fakeoffset[0]
-  uavpose.position.y+=fakeoffset[1]
-  uavpose.position.z+=fakeoffset[2]
- 
-  raw_pub.publish(uavpose)
+  if not useGTforTarget:
+      uavpose.position.x+=fakeoffset[0]
+      uavpose.position.y+=fakeoffset[1]
+      uavpose.position.z+=fakeoffset[2]
 
-  uavpose.position.x+=offsetX #add tracked offset
-  uavpose.position.y+=offsetY
-  uavpose.position.z+=offsetZ
-  pose_pub.publish(uavpose)
+      raw_pub.publish(uavpose)
+
+      uavpose.position.x+=offsetX #add tracked offset
+      uavpose.position.y+=offsetY
+      uavpose.position.z+=offsetZ
+      pose_pub.publish(uavpose)
+  else:
+      raw_pub.publish(uavpose)
+      pose_pub.publish(uavpose)
+
+
 
 rospy.loginfo("startup")
-command_sub = rospy.Subscriber(commandtopic, uav_pose, commandcallback)
-offset_sub = rospy.Subscriber(offsettopic, PoseWithCovarianceStamped, offsetcallback)
-pose_sub = rospy.Subscriber(fireflyposetopic, Pose, posecallback)
-
+truth_pub = rospy.Publisher(truthtopic,uav_pose, queue_size=3)
 fakeoffset_pub = rospy.Publisher(fakeoffsettopic,PoseStamped, queue_size=3)
 command_pub = rospy.Publisher(fireflycommandtopic,uav_pose, queue_size=3)
 pose_pub = rospy.Publisher(posetopic,uav_pose, queue_size=3)
 raw_pub = rospy.Publisher(rawtopic,uav_pose, queue_size=3)
-truth_pub = rospy.Publisher(truthtopic,uav_pose, queue_size=3)
+
+velocity_sub = rospy.Subscriber(fireflyvelocitytopic, Odometry, velocitycallback)
+command_sub = rospy.Subscriber(commandtopic, uav_pose, commandcallback)
+offset_sub = rospy.Subscriber(offsettopic, PoseWithCovarianceStamped, offsetcallback)
+pose_sub = rospy.Subscriber(fireflyposetopic, Pose, posecallback)
+
+
+
 rospy.loginfo("registered subscribers and publishers")
+
 
 def fakeOffsetConfigCallback(config, level):
    #rospy.loginfo("""Reconfigure Request: {int_param}, {double_param},  {str_param}, {bool_param}, {size}""".format(**config))

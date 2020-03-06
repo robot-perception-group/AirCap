@@ -1,0 +1,6 @@
+task_and_robot_environment_name: 'SingleAgentEvaluation-v0'
+num_envs: 1
+neural_nw_path: "/home/rtallamraju/logs/1.4/best_model.pkl"
+
+
+

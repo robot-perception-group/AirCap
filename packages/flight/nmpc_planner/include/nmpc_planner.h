@@ -42,7 +42,7 @@
 //PUTH THIS 0 FOR REAL ROBOTS
 #define SIM_MODE 1
 #define ON_GROUND 0
-#define FORCE_LIMIT 8
+#define FORCE_LIMIT 12
 
 //#define USE_IPOPT
 #undef USE_IPOPT

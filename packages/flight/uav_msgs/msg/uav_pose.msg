@@ -12,7 +12,8 @@
 Header header
 geometry_msgs/Point position
 geometry_msgs/Point velocity
-geometry_msgs/Quaternion orientation  
+geometry_msgs/Point acceleration
+geometry_msgs/Quaternion orientation
 float64[100] covariance
 geometry_msgs/Point angVelocity
 float64 thrust

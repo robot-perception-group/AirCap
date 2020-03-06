@@ -43,7 +43,7 @@
     <param name="maxOffsetUncertaintyRadius" value="3.0" type="double"/>
     <param name="distanceThresholdToTarget" value="8.0" type="double" />
     <param name="copterDesiredHeightinNED" value="-8.0" type="double" />
-    <param name="POINT_OBSTACLES" value="true" type="bool" />
+    <param name="POINT_OBSTACLES" value="false" type="bool" />
     <param name="usingSimulation" value="$(arg usingSimulation)" type="bool" />
 
 

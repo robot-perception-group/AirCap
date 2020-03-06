@@ -12,11 +12,11 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  uav_msgs
   tf
   mav_msgs #This is for the firefly utility in gazebo, not telekyb
   generic_potential_field
   dynamic_reconfigure
+  uav_msgs  
 )
 
 
@@ -44,7 +44,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  CATKIN_DEPENDS roscpp rospy
 CATKIN_DEPENDS roscpp rospy
-LIBRARIES nmpc_solver mpc_solver_SSRR
+LIBRARIES nmpc_solver mpc_solver_SSRR mpc_planner_act_and_GT
 )
 
 
@@ -113,14 +113,14 @@ target_link_libraries(mpc_solver_SSRR
 add_executable(nmpc_planner src/nmpc_planner.cpp)
 add_executable(mpc_SSRR src/mpc_SSRR.cpp)
 add_executable(mpc_act src/mpc_act.cpp)
-add_executable(mpc_DQMPC src/mpc_DQMPC.cpp)
+#add_executable(mpc_DQMPC src/mpc_DQMPC.cpp)
 
 add_dependencies(nmpc_planner ${PROJECT_NAME}_gencfg)
 add_dependencies(mpc_SSRR ${PROJECT_NAME}_gencfg)
 add_dependencies(mpc_act ${PROJECT_NAME}_gencfg)
-add_dependencies(mpc_DQMPC ${PROJECT_NAME}_gencfg)
+#add_dependencies(mpc_DQMPC ${PROJECT_NAME}_gencfg)
 
 target_link_libraries(nmpc_planner ${catkin_LIBRARIES} nmpc_solver)
 target_link_libraries(mpc_SSRR ${catkin_LIBRARIES} mpc_solver_SSRR)
 target_link_libraries(mpc_act ${catkin_LIBRARIES} mpc_solver_SSRR)
-target_link_libraries(mpc_DQMPC ${catkin_LIBRARIES} mpc_solver_SSRR)
+#target_link_libraries(mpc_DQMPC ${catkin_LIBRARIES} mpc_solver_SSRR)

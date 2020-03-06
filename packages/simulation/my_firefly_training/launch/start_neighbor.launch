@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+    <arg name="num_envs" default="1"/>
+    <arg name="log_file" default="~/drl_ws/logs"/>
+    <arg name="robotID" default="1"/>
+    <arg name="num_robots" default="2"/>
+    <arg name="prediction_only" default="False"/>
+
+    <!-- This version uses the openai_ros environments -->
+    <rosparam command="load" file="$(find my_firefly_training)/config/firefly_neighbor_params.yaml" />
+    <!-- Launch the training system -->
+    <node pkg="my_firefly_training" name="firefly_ppo2_parallel_neighbor_$(arg robotID)" type="firefly_ppo2_parallel_neighbor.py" args="$(arg num_envs) $(arg log_file) $(arg robotID) $(arg num_robots) $(arg prediction_only)" output="screen"/>
+    <!-- <node pkg="my_firefly_training" name="firefly_ppo2" type="firefly_ppo2.py" output="screen"/> -->
+</launch>
