@@ -23,7 +23,7 @@ then
 	unset __conda_setup	
 	conda create -n spinningup python=3.6
 	conda activate spinningup
-	cd $DIR$GIT_DIR/git
+	cd $DIR$GIT_DIR
 	cd spinningup && pip install -e .
 	pip install stable-baselines[mpi] rospkg catkin_pkg empy defusedxml gitpython
 	mkdir -p $DIR$DRLWS_DIR/src && cd $DIR$DRLWS_DIR/src

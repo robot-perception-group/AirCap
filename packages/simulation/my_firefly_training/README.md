@@ -15,7 +15,8 @@ git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
 ### 3. Run setup script to download all dependencies for aircap
 Export the path to the git repository you just downloaded as shown below.
 ```
-export AIRCAP_PATH=<path_to_aircap_git_repo>
+echo "export AIRCAP_PATH=<path_to_aircap_git_repo>" >> ~/.bashrc
+source ~/.bashrc
 cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
 bash aircaprl.sh
 ```
@@ -23,8 +24,10 @@ bash aircaprl.sh
 ### 4. Setup openAI-gym, stable-baselines and reinforcement learning ros workspace for conda virtual env
 - Note: install anaconda for python 3.7 from https://docs.continuum.io/anaconda/install/linux/ 
 - After anaconda installation the command prompt asks "Do you wish the installer to initialize Anaconda3 by running conda init? [yes|no]" **yes**
-- **in .bashrc file comment lines starting from # >>> conda initialize >>> to # <<< conda initialize <<<**
+- **At the end of the .bashrc file comment lines starting from # >>> conda initialize >>> to # <<< conda initialize <<<**
+
 ```
+cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
 bash setup_drl_ws.sh
 ```
 
@@ -34,7 +37,7 @@ bash setup_drl_ws.sh
 cd ${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins
 mkdir build && cd build
 cmake ..
-make -j nproc
+make 
 ```
 - **In bashrc file add the following line**:
 ```

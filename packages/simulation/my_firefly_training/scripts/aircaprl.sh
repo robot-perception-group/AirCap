@@ -46,6 +46,7 @@ else
 	ln -s $AIRCAP_PATH/packages/simulation/librepilot_gazebo_bridge/ && \
 	ln -s $AIRCAP_PATH/packages/simulation/random_moving_target/ && \
 	ln -s $DIR$GIT_DIR/rotors_simulator/ 
+		
 
 	echo "CREATING ROS WORKSPACE FOR AIRCAP"
 	cd $DIR$AIRCAPWS_DIR;catkin_make
