@@ -1,6 +1,6 @@
 
 
-## 1. Install ros-melodic-desktop-full
+### 1. Install ros-melodic-desktop-full
 ```
 # Instructions copied from http://wiki.ros.org/melodic/Installation/Ubuntu
 sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
@@ -13,26 +13,26 @@ source ~/.bashrc
 sudo apt install python-rosinstall python-rosinstall-generator python-wstool build-essential
 ```
 
-## 2. Clone aircaprl repository
+### 2. Clone aircaprl repository
 ```
 git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
 ```
 
-## 3. Setup script to download all dependencies for aircap
+### 3. Setup script to download all dependencies for aircap
 ```
 export AIRCAP_PATH=<path_to_aircap_git_repo>
 cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
 bash aircaprl.sh
 ```
 
-## 4. Setup OpenAI-gym, stable-baselines and reinforcement learning ros workspace for conda virtual env
+### 4. Setup OpenAI-gym, stable-baselines and reinforcement learning ros workspace for conda virtual env
 - Note: install anaconda for python 3.7 from https://docs.continuum.io/anaconda/install/linux/ 
 - After anaconda installation the command prompt asks "Do you wish the installer to initialize Anaconda3 by running conda init? [yes|no]" no
 ```
 bash setup_drl_ws.sh
 ```
 
-## 5. Build Actor Plugin
+### 5. Build Actor Plugin
 
 ```
 cd ${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins
@@ -46,7 +46,7 @@ echo "export GAZEBO_PLUGIN_PATH=${AIRCAP_PATH}/packages/simulation/Gazebo_Plugin
 source ~/.bashrc && cd
 ```
 
-## 6. Download trained networks
+### 6. Download trained networks
 Download all the trained networks from here: https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad
 Extract/Copy the networks into the folder ~/aircaprl/drl_ws/logs
 
@@ -61,7 +61,7 @@ The directory hierarchy should look like:
             ...so on
   
 
-## 6. Startup all nodes and environments
+### 7. Startup all nodes and environments
 
 #The following scripts should startup ros nodes, gazebo and drl testing
 
@@ -83,14 +83,14 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ```
 
 
-## 7. Kill all nodes
+### 7. Kill all nodes
 ```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./killswitch 1
 ```
 
-## 7. Change Networks
-### Single Agent:
+### 7. Change Networks
+#### Single Agent:
 
 - Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_singleagent.py
 - Line 29 has the yaml file pointing to the network parameters. 
@@ -103,7 +103,7 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 -- Network1.4-test_network14.yaml
 ```
 
-### Multi Agent
+#### Multi Agent
 - Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_multiagent.py
 - Line 29 has the yaml file pointing to the network parameters. 
 - Currently it is running Network 2.3 >> "test_network23.yaml"
@@ -115,7 +115,7 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ```
 
 
-## 7. Debugging
+### 7. Debugging
 Each ros node runs in its own screen window in bash.
 
 The screens running are env_$id,envsim_$id and $DRL_Training
