@@ -77,7 +77,7 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 - Note! for networks 2.1 and 2.2, the actor has to be static. 
 - Uncomment line 141 "this->velocity  = 0.0;" in file ~/aircalrl/aircap_ws/src/Gazebo_Plugins/ActorPlugin.cc
 - Run make as suggested in STEP 5 above. 
-# For network 2.3 can operate on a moving actor
+- Network 2.3 however can operate on a moving actor
 ```
 ./multi_agent_loop.sh 1 test
 ```
