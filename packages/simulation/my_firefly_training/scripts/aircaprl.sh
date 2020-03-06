@@ -9,12 +9,12 @@ DIR=$HOMEDIR/aircaprl
 GIT_DIR="/git" 
 AIRCAPWS_DIR="/aircap_ws"
 
-if [ -d $DIR] 
+if [ -d $DIR ] 
 then
 	echo "Directory $DIR exists. Please edit the variable-- DIR --in the script"
 else
 	echo "Downloading git repositories to folder echo $DIR$GIT_DIR"
-	mkdir $DIR$GIT_DIR
+	mkdir -p $DIR$GIT_DIR
 	cd $DIR$GIT_DIR
 	# Download AIRCAPRL and Rotors Simulator Repos
 	git clone -b drl_experimental_rahul https://github.com/rahul-tallamraju/rotors_simulator.git 
@@ -36,20 +36,26 @@ else
 	echo "Directory $DIR$AIRCAPWS_DIR exists. Please edit the variable-- AIRCAPWS_DIR --in the script"
 	else
 	mkdir -p $DIR$AIRCAPWS_DIR/src && cd $DIR$AIRCAPWS_DIR/src
-	ln -s $AIRCAP_PATH/aircap/packages/flight/ && \
-	ln -s $AIRCAP_PATH/aircap/packages/scripts/ && \
-	ln -s $AIRCAP_PATH/aircap/packages/simulation/aircap/ && \
-	ln -s $AIRCAP_PATH/aircap/packages/simulation/fake_communication_failure/ && \
-	ln -s $AIRCAP_PATH/aircap/packages/simulation/Gazebo_Plugins/ && \
-	ln -s $AIRCAP_PATH/aircap/packages/simulation/librepilot_gazebo_bridge/ && \
-	ln -s $AIRCAP_PATH/aircap/packages/simulation/random_moving_target/ && \
+	echo "linking files to workspace from $AIRCAP_PATH"
+	ln -s $AIRCAP_PATH/packages/flight/ && \
+	ln -s $AIRCAP_PATH/scripts/ && \
+	ln -s $AIRCAP_PATH/packages/simulation/aircap/ && \
+	ln -s $AIRCAP_PATH/packages/simulation/fake_communication_failure/ && \
+	ln -s $AIRCAP_PATH/packages/simulation/Gazebo_Plugins/ && \
+	ln -s $AIRCAP_PATH/packages/simulation/librepilot_gazebo_bridge/ && \
+	ln -s $AIRCAP_PATH/packages/simulation/random_moving_target/ && \
 	ln -s $DIR$GIT_DIR/rotors_simulator/ 
 
 	echo "CREATING ROS WORKSPACE FOR AIRCAP"
 	cd $DIR$AIRCAPWS_DIR;catkin_make
 	echo "Adding: 'source $DIR$AIRCAPWS_DIR/devel/setup.bash >> ~/.bashrc' "
+	if grep -Fxq "source $DIR$AIRCAPWS_DIR/devel/setup.bash" ~/.bashrc
+	then
+	echo "line already in bashrc"
+	else
 	echo "source $DIR$AIRCAPWS_DIR/devel/setup.bash" >> ~/.bashrc && . ~/.bashrc
 	sleep 5
+	fi
 	fi
 fi
 

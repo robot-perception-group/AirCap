@@ -25,7 +25,7 @@ Network2.3: test_network23.yaml
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 LoadYamlFileParamsTest(rospackage_name="my_firefly_training",
                         rel_path_from_package_to_file="config",
-                        yaml_file_name="test_network21.yaml")
+                        yaml_file_name="test_network23.yaml")
 
 task_and_robot_environment_name = rospy.get_param('task_and_robot_environment_name')
 num_envs = int(sys.argv[1])

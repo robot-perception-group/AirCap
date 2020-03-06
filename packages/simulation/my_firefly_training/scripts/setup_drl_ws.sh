@@ -4,9 +4,9 @@ DIR=$HOMEDIR/aircaprl
 #DIR=$(echo $PWD)
 GIT_DIR="/git"
 DRLWS_DIR="/drl_ws"
-ANACONDA_DIR="anaconda3" #Add the path to anaconda3 directory
+ANACONDA_DIR=$HOMEDIR/anaconda3 #Add the path to anaconda3 directory
 
-if [-d $ANACONDA_DIR]
+if [ -d $ANACONDA_DIR ]
 then
 	# >>> conda initialize >>>
 	# !! Contents within this block are managed by 'conda init' !!

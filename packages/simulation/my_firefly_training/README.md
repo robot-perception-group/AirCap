@@ -52,45 +52,73 @@ Download all the trained networks from here: https://owncloud.tuebingen.mpg.de/i
 Extract/Copy the networks into the folder ~/aircaprl/drl_ws/logs
 The directory hierarchy should look like:
 ~/aircaprl/drl_ws 
-     | logs 
+
+     | logs
+
             || 1.1
             || 1.2
             ...so on
   
 '''
-## 6. Make manual edits to setup scripts to enable networked setup
-
-- edit ~/aircaprl/aircap_ws/src/scripts/setup_mavocap_drl_multiagent.sh
-- find and replace : ROSIP with approporiate master IP address
-- In the script the gazebo master is different for different environment IDs as they can run on multiple computers
-- find and replace : GAZEBOIP with approporiate gazebo server IP address in the if else bash statements
-
-- same edits to the following gazebo simulation launch file
-- ~/aircaprl/aircap_ws/src/scripts/start_gazebo_singleagent_envs.sh
-- ~/aircaprl/aircap_ws/src/scripts/start_gazebo_multiagent_envs.sh
-
-- same edits to the following drl startup scripts
-- ~/aircaprl/aircap_ws/src/scripts/start_drl_singleagent.sh
-- ~/aircaprl/aircap_ws/src/scripts/start_drl_multiagent.sh
-
-- in the file: ~/aircaprl/drl_ws/src/openai_ros/src/openai_ros/robot_gazebo_env.py,
-- find and replace ROSIP and GAZEBOIP appropriately
-
-
-- define ros bag log file in line: LOGPATH="/home/${USER}/ros_logs"
-- NOTE: Alphapose network is always launched with start_gazebo_multiagent_envs.sh i.e. along with the gazebo servers
-
-
-## 7. startup all nodes and environments
+## 6. startup all nodes and environments
 ```
+#The following scripts should startup ros nodes, gazebo and drl testing
 # For single agent drl
+cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./single_agent_loop.sh 1 test
 # params (in order):
 # <num_envs>
 # <rosbag file name or experiment name (currently option not enabled)>
 
 # For multi agent drl
+#Note! for networks 2.1 and 2.2, the actor has to be static. 
+#Uncomment line 141 "this->velocity  = 0.0;" in file ~/aircalrl/aircap_ws/src/Gazebo_Plugins/ActorPlugin.cc
+#Run make as suggested in STEP 5 above. 
+# For network 2.3 can operate on a moving actor
 ./multi_agent_loop.sh 1 test
 # <num_envs>
 # <rosbag file name or experiment name (currently option not enabled)>
 ```
+
+## 7. Kill all nodes
+'''
+cd ~/aircaprl/aircap_ws/src/scripts/simulation
+./killswitch 1
+'''
+
+## 7. Change Networks
+# Single Agent:
+'''
+#Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_singleagent.py
+#Line 29 has the yaml file pointing to the network parameters. 
+#currently it is running Network 1.4 >> "test_network14.yaml"
+#Options to change this file to 
+#Network1.1-test_network11.yaml
+#Network1.2-test_network12.yaml
+#Network1.3-test_network13.yaml
+#Network1.4-test_network14.yaml
+'''
+# Multi Agent
+#Navigate to ~/aircaprl/drl_ws/src/my_firefly_training/src/test_multiagent.py
+#Line 29 has the yaml file pointing to the network parameters. 
+#currently it is running Network 2.3 >> "test_network23.yaml"
+#Options to change this file to 
+#Network2.1-test_network21.yaml
+#Network2.2-test_network22.yaml
+#Network2.3-test_network23.yaml
+
+
+## 7. DEBUGGING
+'''
+Each ros node runs in its own screen window in bash.
+The screens running are env_$id,envsim_$id and $DRL_Training
+To access the screens e.g.,:
+# For aircap ros nodes
+$screen -R env_1
+# For aircap ros nodes
+$screen -R envsim_1
+# For DRL ros node
+$screen -R DRL_Training
+#Once you are accessing a screen
+#Switch between different windows in screen using the shortcut ctrl+A+N
+'''

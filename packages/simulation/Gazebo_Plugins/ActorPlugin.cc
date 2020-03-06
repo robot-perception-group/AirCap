@@ -137,8 +137,8 @@ void ActorPlugin::ChooseNewTarget()
   {
   while ((newTarget - this->target).Length() < 2.0)
   {
-    this->velocity  = 0.0;
-    // this->velocity  = abs(ignition::math::Rand::DblNormal(1.4, 1));
+    this->velocity  = abs(ignition::math::Rand::DblNormal(1.4, 1));
+    //this->velocity  = 0.0;
     newTarget.X(ignition::math::Rand::DblUniform(-10, 10));
     newTarget.Y(ignition::math::Rand::DblUniform(-10, 10));
 //     newTarget.X(x_waypoints[counter % x_waypoints.size()]);
