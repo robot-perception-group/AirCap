@@ -42,6 +42,10 @@ make
 - **In bashrc file add the following line**:
 ```
 echo "export GAZEBO_PLUGIN_PATH=${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins/build" >> ~/.bashrc
+```
+
+then run 
+```
 source ~/.bashrc && cd
 ```
 
@@ -74,12 +78,11 @@ rm -r networks
 #script.sh  <num_envs> <rosbag file name or experiment name (currently option not enabled)>
 - For single agent drl
 ```
-**Also we noticed that Gazebo may crash on the first run if it has been newly installed**
-**Run ./killswitch to kill all nodes and rerun the below script**
-
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./single_agent_loop.sh 1 test
 ```
+**Also we noticed that Gazebo may crash on the first run if it has been newly installed**
+**Run ./killswitch to kill all nodes and rerun the below script**
 
 - For multi agent drl
 ```
