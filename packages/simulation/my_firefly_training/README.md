@@ -46,7 +46,6 @@ source ~/.bashrc && cd
 ```
 
 ### 6. Download the trained networks
-**Download all the trained networks from here: https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad**
 ```
 wget -O networks.zip https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad/download
 unzip networks.zip
