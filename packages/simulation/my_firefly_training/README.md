@@ -48,6 +48,7 @@ source ~/.bashrc && cd
 ### 6. Download the trained networks
 **Download all the trained networks from here: https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad**
 ```
+wget -O networks.zip https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad/download
 unzip networks.zip
 mv networks/* ~/aircaprl/drl_ws/logs
 rm -r networks
@@ -68,10 +69,15 @@ rm -r networks
 
 #The following scripts should startup ros nodes, gazebo and drl testing
 #**It may take sometime to start gazebo for first time so be patient :)** 
+
+
 #To start script the format is as follows
 #script.sh  <num_envs> <rosbag file name or experiment name (currently option not enabled)>
 - For single agent drl
 ```
+**Also we noticed that Gazebo may crash on the first run if it has been newly installed**
+**Run ./killswitch to kill all nodes and rerun the below script**
+
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./single_agent_loop.sh 1 test
 ```

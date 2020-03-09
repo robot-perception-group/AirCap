@@ -9,6 +9,8 @@ DIR=$HOMEDIR/aircaprl
 GIT_DIR="/git" 
 AIRCAPWS_DIR="/aircap_ws"
 
+ROSVER=$(echo rosversion -d)
+if [ ROSVER=="melodic" ]; then
 if [ -d $DIR ] 
 then
 	echo "Directory $DIR exists. Please edit the variable-- DIR --in the script"
@@ -28,6 +30,13 @@ else
 	sudo apt install screen ros-melodic-octomap-msgs ros-melodic-octomap-ros ros-melodic-mrpt-bridge ros-melodic-cv-camera ros-melodic-mav-msgs \
 	ros-melodic-mavlink python-wstool python-catkin-tools protobuf-compiler libgoogle-glog-dev ros-melodic-control-toolbox libmrpt* -y
 	sudo apt install ros-melodic-pose-cov-ops
+	if [ $? -eq 0 ]; then
+		echo "OK"
+	else
+		echo "ROTORS SIMULATOR PACKAGES INSTALL FAILED."
+		exit
+	fi
+
 
 	echo "INSTALLING PACKAGES FOR SPINNINGUP"
 	sudo apt-get install libopenmpi-dev  cmake python3-dev zlib1g-dev
@@ -62,7 +71,7 @@ else
 	fi
 	fi
 fi
-
-
-
+else
+echo "ros melodic has not been installed or initialized. Please check ros melodic installation in wiki"
+fi
 
