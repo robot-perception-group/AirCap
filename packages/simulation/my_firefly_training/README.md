@@ -39,13 +39,8 @@ mkdir build && cd build
 cmake ..
 make 
 ```
-- **In bashrc file add the following line**:
 ```
 echo "export GAZEBO_PLUGIN_PATH=${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins/build" >> ~/.bashrc
-```
-
-then run 
-```
 source ~/.bashrc && cd
 ```
 
