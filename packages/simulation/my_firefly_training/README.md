@@ -60,6 +60,7 @@ wget -O networks.zip https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9
 unzip networks.zip
 mv networks/* ~/aircaprl/drl_ws/logs
 rm networks.zip
+rm -r networks
 ```
 
 **The directory hierarchy should look like:**
@@ -133,7 +134,7 @@ cd ~/aircaprl/aircap_ws/src/scripts/simulation
 - Network 2.3 however can operate on a moving actor
 
 
-### 10. View the debug output 
+### (Optional) 10. View the debug output 
 Each ros node runs in its own screen window in bash.
 
 The screens running are env_$id,envsim_$id and $DRL_Training
@@ -152,3 +153,12 @@ screen -R DRL_Training
 Once you are accessing a screen
 
 Switch between different windows in screen using the shortcut ctrl+A+N
+
+
+### (Optional) 11. Recording rewards in rosbags
+- Until step 9 setting record-bag-flag will record images but it will not record rewards. This is because the rewards are obtained from pose and shape-estimation neural networks.
+- Here we describe how to record the rewards into rosbags during testing.
+a. Enabling alphapose ros node
+- Download the models manually: duc_se.pth : https://drive.google.com/uc?id=1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW&export=download, yolov3-spp.weights: https://drive.google.com/uc?id=1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC&export=download
+- Place them into ${AIRCAPDIR}/git/Alphapose/models/sppe and ${AIRCAPDIR}/git/Alphapose/models/yolo respectively.
+
