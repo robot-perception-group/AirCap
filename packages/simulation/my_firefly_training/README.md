@@ -24,10 +24,21 @@ bash aircaprl.sh
 ```
 
 ### 4. Setup openAI-gym, stable-baselines and reinforcement learning ros workspace for conda virtual env
-- Note: install anaconda for python 3.7 from https://docs.continuum.io/anaconda/install/linux/ 
-- After anaconda installation the command prompt asks "Do you wish the installer to initialize Anaconda3 by running conda init? [yes|no]" **yes**
-- **At the end of the .bashrc file comment lines starting from # >>> conda initialize >>> to # <<< conda initialize <<<**
-
+- During anaconda installation the command prompt asks "Do you wish the installer to initialize Anaconda3 by running conda init? [yes|no]" **yes**
+```
+#Anaconda 3 for python  3.7 install
+wget -O ${AIRCAPDIR}/anaconda_install.sh https://repo.anaconda.com/archive/Anaconda3-2019.10-Linux-x86_64.sh
+cd ${AIRCAPDIR} && bash anaconda_install.sh
+rm anaconda_install.sh
+```
+- **At the end of the .bashrc file comment the lines starting from  >>> conda initialize >>> to  <<< conda initialize <<<**
+```
+gedit ~/.bashrc
+# search for >>> conda initialize >>>
+# comment lines  from >>> conda initialize >>> to <<< conda initialize <<< 
+# save and close the file
+```
+- Setup the deep reinforcement learning - ros - openAiGym workspace
 ```
 cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
 bash setup_drl_ws.sh
@@ -39,10 +50,8 @@ cd ${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins
 mkdir build && cd build
 cmake ..
 make 
-```
-```
 echo "export GAZEBO_PLUGIN_PATH=${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins/build" >> ~/.bashrc
-source ~/.bashrc && cd
+source ~/.bashrc && cd ${AIRCAPDIR}
 ```
 
 ### 6. Download the trained networks
@@ -50,7 +59,7 @@ source ~/.bashrc && cd
 wget -O networks.zip https://owncloud.tuebingen.mpg.de/index.php/s/oD6N9smx7xHe9Ad/download
 unzip networks.zip
 mv networks/* ~/aircaprl/drl_ws/logs
-rm -r networks
+rm networks.zip
 ```
 
 **The directory hierarchy should look like:**
@@ -66,27 +75,29 @@ rm -r networks
 
 ### 7. Startup all the ros nodes and the gazebo test environment
 
-#The following scripts should startup ros nodes, gazebo and drl testing
-#**It may take sometime to start gazebo for first time so be patient :)** 
+- The following scripts should startup ros nodes, gazebo and drl testing
+- **It may take sometime to start gazebo for first time so be patient (around 30 seconds):)** 
 
 
-#To start script the format is as follows
-#script.sh  <number_of_runs (default value: 1)> <rosbag file name or experiment name (default name: test)> <record bag flag (default value: 0)>
+- To start script the format is as follows
+- script.sh  <number_of_experiment_runs (default value: 1)> <rosbag file name or experiment name (default name: test)> <record-bag-flag (default value: 0)>
+- **We noticed thatI Gazebo could crash on the first run if it was newly installed.**
+- **If Gazebo client does not startup in 30 seconds, run ./killswitch to kill all nodes and rerun the below script**
+- **If record-bag-flag = 1 , then the bags save images and rewards for 120s. The saving of bags after 120s of experiment run code take a few minutes as images have to be written from memory.**
 - For single agent drl
-**We noticed that Gazebo could crash on the first run if it was newly installed.**
-**If Gazebo client does not startup in 30 seconds, run ./killswitch to kill all nodes and rerun the below script**
 ```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./single_agent_loop.sh 1 test 0
 ```
-
 - For multi agent drl
 ```
+cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./multi_agent_loop.sh 1 test 0
 ```
 
 
 ### 8. Kill all the ros nodes
+Always execute the killswitch node after each experimental run to kill all ros nodes
 ```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
 ./killswitch.sh 1

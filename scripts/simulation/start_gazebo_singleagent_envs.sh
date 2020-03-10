@@ -111,7 +111,8 @@ echo "Started Actor Joint Publisher"
 # <num_robots> (per env)
 # <Test (unused parameter)>
 echo "Starting Single Agent Deep RL testing"
-screen -d -m -S DRL_Training bash -i -c "./start_drl_singleagent.sh 1 $LOGPATH/test_single 1 1 True"
+LOGPATH=$AIRCAPDIR/ros_logs
+screen -d -m -S DRL_Training bash -i -c "./start_drl_singleagent.sh 1 $LOGPATH/${NAME} 1 1 True"
 # result=1
 
 sleep 20
@@ -128,18 +129,21 @@ if [ $RECORD -eq 1 ]; then
   if [ -d $AIRCAPDIR ]; then
     LOGPATH=$AIRCAPDIR/ros_logs
     LOGFILE=$( echo ${LOGPATH}/${NAME}*.bag )
-    if [ -e $LOGFILE ]; then
+    if [ -e $LOGFILE ]; then    
       echo "Experiment result exists not recording bag"
     else
+      echo "saving rosbags to ${LOGPATH}"echo "saving rosbags to ${LOGPATH}"
       #START ROSBAG RECORDING. Topic to record are defined in drl_topics.txt  
-      echo "recording topics mentioned in file drl_topics.txt"
-      nohup ./kill.sh & rosbag record -b 0 -o ${LOGPATH}/${NAME}.bag $( cat drl_topics.txt | tr '\n' ' ' ) __name:=my_bag 
+      echo "recording topics mentioned in file drl_topics.txt for 120s. "
+      echo "Warning image topics are recorded by default and bag sizes can get very big very quickly. Comment the following topics in drl_topics.txt to disable image recording"
+      echo "/firefly_1/firefly_1/xtion/rgb/image_raw , /firefly_1/firefly_1/xtion/rgb/camera_info"
+      nohup ./kill.sh &  rosbag record -b 0 -o ${LOGPATH}/${NAME}.bag $( cat drl_topics.txt | tr '\n' ' ' ) __name:=my_bag 
     fi
   else
     "$AIRCAPDIR does not exist. Not recording bag. Check git readme on how to set $AIRCAPDIR"
   fi
 else
-  "RECORD not set. Not recording bag"
+  echo "RECORD not set. Not recording bag"
 fi
 done
 

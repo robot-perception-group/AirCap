@@ -92,4 +92,4 @@
 /firefly_1/firefly_1/xtion/rgb/image_raw
 /firefly_1/firefly_1//xtion/rgb/camera_info
 /firefly_2/firefly_2/xtion/rgb/image_raw
-/firefly_2/firefly_2//xtion/rgb/camera_info
+/firefly_2/firefly_2/xtion/rgb/camera_info

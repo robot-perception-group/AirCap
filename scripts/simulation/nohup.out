@@ -1,0 +1,32 @@
+killing /my_bag
+killed
+killing:
+ * /actor_joint_pub_node
+ * /firefly_1/joint_state_publisher_1
+ * /firefly_1/lee_position_controller_node
+ * /firefly_1/robot_state_publisher_mavs_1
+ * /firefly_1/waypoint_publisher_1
+ * /firefly_env_11_16123_1583845918510
+ * /gazebo
+ * /gazebo_gui
+ * /machine_1/fake_communication_failure_1
+ * /machine_1/fake_communication_failure_2
+ * /machine_1/librepilot_gazebo_bridge
+ * /machine_1/tf_from_uav_pose
+ * /machine_1/video/camera_info_publisher
+ * /machine_1_actor_joint_GT_image_overlay
+ * /rosout
+killed
+roslaunch: no process found
+roslaunch: no process found
+ssd_server.bin: no process found
+ssd_server.sh: no process found
+ERROR: Unable to communicate with master!
+ERROR: Unable to communicate with master!
+gzclient: no process found
+gzserver: no process found
+roslaunch: no process found
+roslaunch: no process found
+roslaunch: no process found
+ssd_server.bin: no process found
+ssd_server.sh: no process found

@@ -35,7 +35,7 @@ then
 	ln -s $AIRCAPDIR$GIT_DIR/openairos/openai_ros
 	ln -s $AIRCAPDIR$GIT_DIR/geometry2
 	ln -s $AIRCAPDIR$GIT_DIR/geometry	
-	cd .. && catkin_make -DPYTHON_EXECUTABLE=$ANACONDA_DIR/envs/spinningup/bin/python3
+	cd .. && catkin_make_isolated -DPYTHON_EXECUTABLE=$ANACONDA_DIR/envs/spinningup/bin/python3
 	mkdir logs
 	conda deactivate
 

@@ -22,12 +22,10 @@ if [ -d $ANACONDA_DIR ]; then
     fi
     unset __conda_setup
     # <<< conda initialize <<<
-    cd ~/aircaprl/drl_ws/src/my_firefly_training/src
+    cd ${AIRCAPDIR}/drl_ws/src/my_firefly_training/src
     conda activate spinningup
-    source ~/aircaprl/drl_ws/devel/setup.bash
     export ROS_MASTER_URI=http://$ROSIP:11311; export ROS_IP=$ROSIP; export ROS_HOSTNAME=${ROSIP}
-    #roslaunch my_firefly_training start_training.launch num_envs:=$NUM_ENVS log_file:=$LOG_PATH robotID:=$ROBOT_ID num_robots:=$NUM_ROBOTS prediction_only:=$PREDICTION
-    source ~/aircaprl/drl_ws/devel/setup.bash && python test_multiagent.py $NUM_ENVS $LOG_PATH $ROBOT_ID $NUM_ROBOTS $PREDICTION
+    source ${AIRCAPDIR}/drl_ws/devel_isolated/setup.bash && python test_multiagent.py $NUM_ENVS $LOG_PATH $ROBOT_ID $NUM_ROBOTS $PREDICTION
 else
     echo "In the script $0, set --ANACONDA_DIR-- to the directory where anaconda3 is installed. "
 fi
