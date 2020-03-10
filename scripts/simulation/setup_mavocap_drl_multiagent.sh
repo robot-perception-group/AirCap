@@ -13,8 +13,6 @@ NUM_ENVS=$5
 
 OBS=$6
 
-RECORD="false"
-
 ROSIP=$(hostname -I | cut -d' ' -f1);
 ROS_MASTER=http://$ROSIP:1131
 

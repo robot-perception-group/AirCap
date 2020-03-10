@@ -1,5 +1,5 @@
 task_and_robot_environment_name: 'TrainMeta-v0'
 num_envs: 1
-neural_nw_path: "/aircaprl/drl_ws/logs/2.3/best_model.pkl"
+neural_nw_path: "/drl_ws/logs/2.3/best_model.pkl"
 
 

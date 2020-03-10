@@ -2,22 +2,28 @@
 ##DIR is Directory where all the workspaces are created. Currently initialized to /home/${USER}/
 
 HOMEDIR=$(eval echo ~$USER)
-DIR=$HOMEDIR/aircaprl
+
+if [[ -v AIRCAPDIR ]];then
+	echo "AIRCAPDIR is set to $AIRCAPDIR"
+else
+	AIRCAPDIR=$HOMEDIR/aircaprl
+fi
 #DIR=$(echo $PWD)
 
 ##Add a directory name where github repos related to aircaprl have to be downloaded
 GIT_DIR="/git" 
 AIRCAPWS_DIR="/aircap_ws"
 
+#Check if ROS version is melodic
 ROSVER=$(echo rosversion -d)
 if [ ROSVER=="melodic" ]; then
-if [ -d $DIR ] 
-then
-	echo "Directory $DIR exists. Please edit the variable-- DIR --in the script"
+if [ -d $AIRCAPDIR ]; then
+	echo "Directory $AIRCAPDIR exists. Delete ~/aircaprl directory - OR- Please edit the variable-- AIRCAPDIR --in the script"
 else
-	echo "Downloading git repositories to folder echo $DIR$GIT_DIR"
-	mkdir -p $DIR$GIT_DIR
-	cd $DIR$GIT_DIR
+	echo "Downloading git repositories to folder echo $AIRCAPDIR$GIT_DIR"
+	mkdir -p $AIRCAPDIR/ros_logs
+	mkdir -p $AIRCAPDIR$GIT_DIR
+	cd $AIRCAPDIR$GIT_DIR
 	# Download AIRCAPRL and Rotors Simulator Repos
 	git clone -b drl_experimental_rahul https://github.com/rahul-tallamraju/rotors_simulator.git 
 	git clone https://github.com/robot-perception-group/openairos.git &&\
@@ -41,11 +47,11 @@ else
 	echo "INSTALLING PACKAGES FOR SPINNINGUP"
 	sudo apt-get install libopenmpi-dev  cmake python3-dev zlib1g-dev
 
-	if [ -d $DIR$AIRCAPWS_DIR ]
+	if [ -d $AIRCAPDIR$AIRCAPWS_DIR ]
 	then 
-	echo "Directory $DIR$AIRCAPWS_DIR exists. Please edit the variable-- AIRCAPWS_DIR --in the script"
+	echo "Directory $AIRCAPDIR$AIRCAPWS_DIR exists. Please edit the variable-- AIRCAPWS_DIR --in the script"
 	else
-	mkdir -p $DIR$AIRCAPWS_DIR/src && cd $DIR$AIRCAPWS_DIR/src
+	mkdir -p $AIRCAPDIR$AIRCAPWS_DIR/src && cd $AIRCAPDIR$AIRCAPWS_DIR/src
 	echo "linking files to workspace from $AIRCAP_PATH"
 	ln -s $AIRCAP_PATH/packages/flight/ && \
 	ln -s $AIRCAP_PATH/scripts/ && \
@@ -55,18 +61,18 @@ else
 	ln -s $AIRCAP_PATH/packages/simulation/librepilot_gazebo_bridge/ && \
 	ln -s $AIRCAP_PATH/packages/simulation/random_moving_target/ && \
 	ln -s $AIRCAP_PATH/packages/simulation/alphapose_node/ && \
-	ln -s $DIR$GIT_DIR/rotors_simulator/ 
+	ln -s $AIRCAPDIR$GIT_DIR/rotors_simulator/ 
  
 		
 
 	echo "CREATING ROS WORKSPACE FOR AIRCAP"
-	cd $DIR$AIRCAPWS_DIR;catkin_make
-	echo "Adding: 'source $DIR$AIRCAPWS_DIR/devel/setup.bash >> ~/.bashrc' "
-	if grep -Fxq "source $DIR$AIRCAPWS_DIR/devel/setup.bash" ~/.bashrc
+	cd $AIRCAPDIR$AIRCAPWS_DIR;catkin_make
+	echo "Adding: 'source $AIRCAPDIR$AIRCAPWS_DIR/devel/setup.bash >> ~/.bashrc' "
+	if grep -Fxq "source $AIRCAPDIR$AIRCAPWS_DIR/devel/setup.bash" ~/.bashrc
 	then
 	echo "line already in bashrc"
 	else
-	echo "source $DIR$AIRCAPWS_DIR/devel/setup.bash" >> ~/.bashrc && . ~/.bashrc
+	echo "source $AIRCAPDIR$AIRCAPWS_DIR/devel/setup.bash" >> ~/.bashrc && . ~/.bashrc
 	sleep 5
 	fi
 	fi

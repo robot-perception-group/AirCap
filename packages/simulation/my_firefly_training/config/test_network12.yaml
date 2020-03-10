@@ -1,6 +1,6 @@
 task_and_robot_environment_name: 'SingleAgentEvaluation-v0'
 num_envs: 1
-neural_nw_path: "/aircaprl/drl_ws/logs/1.2/best_model.pkl"
+neural_nw_path: "/drl_ws/logs/1.2/best_model.pkl"
 
 
 

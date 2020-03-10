@@ -1,7 +1,11 @@
 #!/bin/bash
 HOMEDIR=$(eval echo ~$USER)
-DIR=$HOMEDIR/aircaprl
-#DIR=$(echo $PWD)
+if [[ -v AIRCAPDIR ]];then
+	echo "AIRCAPDIR is set to $AIRCAPDIR"
+else
+	AIRCAPDIR=$HOMEDIR/aircaprl
+fi
+
 GIT_DIR="/git"
 DRLWS_DIR="/drl_ws"
 ANACONDA_DIR=$HOMEDIR/anaconda3 #Add the path to anaconda3 directory
@@ -23,20 +27,20 @@ then
 	unset __conda_setup	
 	conda create -n spinningup python=3.6
 	conda activate spinningup
-	cd $DIR$GIT_DIR
+	cd $AIRCAPDIR$GIT_DIR
 	cd spinningup && pip install -e .
 	pip install stable-baselines[mpi] rospkg catkin_pkg empy defusedxml gitpython
-	mkdir -p $DIR$DRLWS_DIR/src && cd $DIR$DRLWS_DIR/src
+	mkdir -p $AIRCAPDIR$DRLWS_DIR/src && cd $AIRCAPDIR$DRLWS_DIR/src
 	ln -s $AIRCAP_PATH/packages/simulation/my_firefly_training && \
-	ln -s $DIR$GIT_DIR/openairos/openai_ros
-	ln -s $DIR$GIT_DIR/geometry2
-	ln -s $DIR$GIT_DIR/geometry	
+	ln -s $AIRCAPDIR$GIT_DIR/openairos/openai_ros
+	ln -s $AIRCAPDIR$GIT_DIR/geometry2
+	ln -s $AIRCAPDIR$GIT_DIR/geometry	
 	cd .. && catkin_make -DPYTHON_EXECUTABLE=$ANACONDA_DIR/envs/spinningup/bin/python3
 	mkdir logs
 	conda deactivate
 
 else
-	echo "Anaconda directory does not exist. Please change variable -- ANACONDA_DIR -- in script"		
+	echo "~/anaconda3 directory does not exist. Please change variable -- ANACONDA_DIR -- in the script $0"		
 fi
 
 

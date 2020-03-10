@@ -12,10 +12,12 @@ sudo apt install python-rosinstall python-rosinstall-generator python-wstool bui
 git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
 ```
 
-### 3. Run setup script to download all dependencies for aircap
-Export the path to the git repository you just downloaded as shown below.
+### 3. Export aircap environment variables to .bashrc and Run setup script to download all dependencies for aircap
+Export AIRCAP_PATH to the path of the git repository you just downloaded as shown below.
+Export AIRCAPDIR to the path where all aircaprl packages need to be installed as shown below. We recommend setting this to is /home/${USER}/aircaprl as seen below.
 ```
-echo "export AIRCAP_PATH=<path_to_aircap_git_repo>" >> ~/.bashrc
+echo "export AIRCAP_PATH=<"FILL_THE_PATH_TO_AIRCAP_GIT_REPOSITORY">" >> ~/.bashrc
+echo "export AIRCAPDIR=/home/$USER/aircaprl" >> ~/.bashrc
 source ~/.bashrc
 cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
 bash aircaprl.sh
@@ -32,7 +34,6 @@ bash setup_drl_ws.sh
 ```
 
 ### 5. Build the actor plugin
-
 ```
 cd ${AIRCAP_PATH}/packages/simulation/Gazebo_Plugins
 mkdir build && cd build
@@ -54,7 +55,7 @@ rm -r networks
 
 **The directory hierarchy should look like:**
 
-~/aircaprl/drl_ws 
+| ~/aircaprl/drl_ws 
 
      | logs
 
@@ -70,18 +71,18 @@ rm -r networks
 
 
 #To start script the format is as follows
-#script.sh  <num_envs> <rosbag file name or experiment name (currently option not enabled)>
+#script.sh  <number_of_runs (default value: 1)> <rosbag file name or experiment name (default name: test)> <record bag flag (default value: 0)>
 - For single agent drl
+**We noticed that Gazebo could crash on the first run if it was newly installed.**
+**If Gazebo client does not startup in 30 seconds, run ./killswitch to kill all nodes and rerun the below script**
 ```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation
-./single_agent_loop.sh 1 test
+./single_agent_loop.sh 1 test 0
 ```
-**Also we noticed that Gazebo may crash on the first run if it has been newly installed**
-**Run ./killswitch to kill all nodes and rerun the below script**
 
 - For multi agent drl
 ```
-./multi_agent_loop.sh 1 test
+./multi_agent_loop.sh 1 test 0
 ```
 
 

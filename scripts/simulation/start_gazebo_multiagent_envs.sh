@@ -11,9 +11,8 @@ NAME=$4
 
 NUM_ENVS=$5
 
-OBS=$6
+RECORD=$6
 
-RECORD="false"
 
 ROSIP=$(hostname -I | cut -d' ' -f1)
 ROS_MASTER=http://$ROSIP:1131
@@ -26,8 +25,8 @@ fi
 if [ -z "$NAME" ]; then
    NAME="gazebo_flight_$( date + '%s' )"
 fi
-if [ -z "$OBS" ]; then
-   OBS=6
+if [ -z "$RECORD" ]; then
+   RECORD=0
 fi
 # For world file with obstacles
 WORLD="arena_RAL"
@@ -89,7 +88,7 @@ screen -S envsim_${env_id} -X title "ACTOR_JOINTS${env_id}"
 echo "Started Actor Joint Publisher"
 
 
-# echo "Starting HMR"
+# echo "Starting SPIN"
 # screen -S envsim_${env_id} -X screen bash -i -c "export ROS_MASTER_URI=${ROS_MASTER}${env_id}; export GAZEBO_MASTER_URI=${GAZEBO_MASTER}${env_id}; export ROS_IP=${GAZEBOIP}; export ROS_HOSTNAME=${GAZEBOIP}; . ~/spin/bin/activate; . ~/hmr_ws/devel/setup.bash ; rosrun hmr_node hmr_pub.py 1"
 # screen -S envsim_${env_id} -X title HMR${env_id}
 # sleep 5
@@ -130,8 +129,23 @@ for env in $(seq 0 $(($NUM_ENVS-1))); do
   done
 done
 
-#START ROSBAG RECORDING. Topic to record are defined in drl_topics.txt
-# nohup ./kill.sh & rosbag record -b 0 -o ${LOGPATH}/${NAME}.bag $( cat drl_topics.txt | tr '\n' ' ' ) __name:=my_bag 
+if [ $RECORD -eq 1 ]; then
+  if [ -d $AIRCAPDIR ]; then
+    LOGPATH=$AIRCAPDIR/ros_logs
+    LOGFILE=$( echo ${LOGPATH}/${NAME}*.bag )
+    if [ -e $LOGFILE ]; then
+      echo "Experiment result exists not recording bag"
+    else
+      #START ROSBAG RECORDING. Topic to record are defined in drl_topics.txt  
+      echo "recording topics mentioned in file drl_topics.txt"
+      nohup ./kill.sh & rosbag record -b 0 -o ${LOGPATH}/${NAME}.bag $( cat drl_topics.txt | tr '\n' ' ' ) __name:=my_bag 
+    fi
+  else
+    "$AIRCAPDIR does not exist. Not recording bag. Check git readme on how to set $AIRCAPDIR"
+  fi
+else
+  "RECORD not set. Not recording bag"
+fi
 
 done
 

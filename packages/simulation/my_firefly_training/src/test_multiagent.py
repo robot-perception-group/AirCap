@@ -93,8 +93,10 @@ if __name__ == "__main__":
     env = SubprocVecEnv(envs, start_method='forkserver')    
     print("Gym environment done")
         
-    nw_path = expanduser('~')+rospy.get_param('neural_nw_path')
-    assert os.path.exists(nw_path)
+    aircaprl_path = os.environ.get('AIRCAPDIR')
+    assert os.path.exists(aircaprl_path), "Set $AIRCAPDIR. Refer https://github.com/robot-perception-group/AirCap/tree/aircaprl/packages/simulation/my_firefly_training"
+    nw_path = aircaprl_path+rospy.get_param('neural_nw_path')
+    assert os.path.exists(nw_path), "Cannot find neural network at :"+nw_path
     
     '''Load the network parameters to test the network'''
     model = PPO2.load(nw_path,env=env)
