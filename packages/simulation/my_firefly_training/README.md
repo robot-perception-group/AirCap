@@ -9,14 +9,14 @@ sudo apt install python-rosinstall python-rosinstall-generator python-wstool bui
 
 ### 2. Clone aircaprl repository
 ```
-git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
+cd && git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
 ```
 
 ### 3. Export aircap environment variables to .bashrc and run the setup script to download all dependencies for aircap
 **export "AIRCAP_PATH" to the path of the git repository you just downloaded as shown below.**<br/>  
 **export "AIRCAPDIR" to the path where all aircaprl packages need to be installed as shown below. We recommend setting this to  /home/${USER}/aircaprl as seen below.**  
 ```
-echo "export AIRCAP_PATH=<"FILL_THE_PATH_TO_AIRCAP_GIT_REPOSITORY">" >> ~/.bashrc
+echo "export AIRCAP_PATH=/home/${USER}/AirCap" >> ~/.bashrc
 echo "export AIRCAPDIR=/home/$USER/aircaprl" >> ~/.bashrc
 source ~/.bashrc
 cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
