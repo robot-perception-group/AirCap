@@ -23,6 +23,19 @@ cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
 bash aircaprl.sh
 ```
 
+### (Optional) 3. Enable reward recording in rosbags. 
+- Note: This would require download of large files and several external dependencies. 
+- Note: Rewards depend on pose and shape estimation neural networks running alongside the deep reinforcement learning node.
+- Note: Only if you plan to run these networks and record the rewards this step is required otherwise skip it.
+- Note: Neural networks like Alphapose, SPIN, Multi-view HMR will be downloaded and their respective ros nodes, python virtual environments and workspaces will be created
+- Note: GPU requirements for Multi-view HMR are fairly high (around 4GB on an Nvidia GTX 1080Ti) per instance
+- Note: GPU requirements for Alphapose  (around 2GB on an Nvidia GTX 1080Ti) per instance
+- Note: GPU requirements for SPIN  (around 2GB on an Nvidia GTX 1080Ti) per instance
+```
+cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
+bash aircaprl_record.sh
+```
+
 ### 4. Setup openAI-gym, stable-baselines and reinforcement learning ros workspace for conda virtual env
 - During anaconda installation the command prompt asks "Do you wish the installer to initialize Anaconda3 by running conda init? [yes|no]" **yes**
 ```
@@ -82,9 +95,9 @@ rm -r networks
 
 - To start script the format is as follows
 - script.sh  <number_of_experiment_runs (default value: 1)> <rosbag file name or experiment name (default name: test)> <record-bag-flag (default value: 0)>
-- **We noticed thatI Gazebo could crash on the first run if it was newly installed.**
+- **We noticed that Gazebo could crash on the first run if it was newly installed.**
 - **If Gazebo client does not startup in 30 seconds, run ./killswitch to kill all nodes and rerun the below script**
-- **If record-bag-flag = 1 , then the bags save images and rewards for 120s. The saving of bags after 120s of experiment run code take a few minutes as images have to be written from memory.**
+- **If record-bag-flag = 1 , then the bags save images and rewards for 120s. The saving of bags after 120s of experiment run could take a few minutes as images have to be written from memory.**
 - For single agent drl
 ```
 cd ~/aircaprl/aircap_ws/src/scripts/simulation

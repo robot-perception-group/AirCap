@@ -96,12 +96,10 @@ echo "Started Actor Joint Publisher"
 # sleep 20
 
 
-# if [ ${env_id} -lt 3 ]; then
-# echo "Starting Alphapose"
-# screen -S envsim_${env_id} -X screen bash -i -c "export ROS_MASTER_URI=${ROS_MASTER}${env_id}; export GAZEBO_MASTER_URI=${GAZEBO_MASTER}${env_id}; export ROS_IP=${GAZEBOIP}; export ROS_HOSTNAME=${GAZEBOIP}; . ~/alphapose/bin/activate; . ~/alphapose_ws/devel/setup.bash ; rosrun alphapose_node alphapose_cropped.py --num_machines=2"
-# screen -S envsim_${env_id} -X title ALPHA${env_id}
-# sleep 5
-# fi
+echo "Starting Alphapose"
+screen -S envsim_${env_id} -X screen bash -i -c "export ROS_MASTER_URI=${ROS_MASTER}${env_id}; export GAZEBO_MASTER_URI=${GAZEBO_MASTER}${env_id}; export ROS_IP=${GAZEBOIP}; export ROS_HOSTNAME=${GAZEBOIP}; . $AIRCAPDIR/venv/alphapose/bin/activate; . $AIRCAPDIR/alphapose_ws/devel/setup.bash ; rosrun alphapose_node alphapose_cropped.py --num_machines=2"
+screen -S envsim_${env_id} -X title ALPHA${env_id}
+sleep 5
 
 ##### START DRL TESTING #############
 # params for reinforcement learning script (in order):
@@ -140,10 +138,9 @@ if [ $RECORD -eq 1 ]; then
       nohup ./kill.sh &  rosbag record -b 0 -o ${LOGPATH}/${NAME}.bag $( cat drl_topics.txt | tr '\n' ' ' ) __name:=my_bag 
     fi
   else
-    "$AIRCAPDIR does not exist. Not recording bag. Check git readme on how to set $AIRCAPDIR"
+    " $AIRCAPDIR does not exist. Not recording bag. Check git readme on how to set $AIRCAPDIR "
   fi
 else
-  echo "RECORD not set. Not recording bag"
+  echo " RECORD not set. Not recording bag "
 fi
 done
-

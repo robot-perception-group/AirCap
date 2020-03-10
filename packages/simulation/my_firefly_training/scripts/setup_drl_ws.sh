@@ -10,8 +10,7 @@ GIT_DIR="/git"
 DRLWS_DIR="/drl_ws"
 ANACONDA_DIR=$HOMEDIR/anaconda3 #Add the path to anaconda3 directory
 
-if [ -d $ANACONDA_DIR ]
-then
+if [ -d $ANACONDA_DIR ]; then
 	# >>> conda initialize >>>
 	# !! Contents within this block are managed by 'conda init' !!
 	__conda_setup="$('$ANACONDA_DIR/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
@@ -25,7 +24,9 @@ then
 	    fi
 	fi
 	unset __conda_setup	
-	conda create -n spinningup python=3.6
+	
+	echo "creating conda env"
+	conda create -n spinningup python=3.6 -y
 	conda activate spinningup
 	cd $AIRCAPDIR$GIT_DIR
 	cd spinningup && pip install -e .
@@ -38,12 +39,6 @@ then
 	cd .. && catkin_make_isolated -DPYTHON_EXECUTABLE=$ANACONDA_DIR/envs/spinningup/bin/python3
 	mkdir logs
 	conda deactivate
-
 else
-	echo "~/anaconda3 directory does not exist. Please change variable -- ANACONDA_DIR -- in the script $0"		
+	echo " ~/anaconda3 directory does not exist. Please change variable -- ANACONDA_DIR -- in the script $0 "		
 fi
-
-
-
-
-
