@@ -172,15 +172,25 @@ Switch between different windows in screen using the shortcut ctrl+A+N
 ### (Optional) 11. Recording rewards in rosbags
 - Until step 9 setting record-bag-flag will record images but it will not record rewards. This is because the rewards are obtained from pose and shape-estimation neural networks.
 - Here we describe how to record the rewards into rosbags during testing.
-> Enabling alphapose ros node
->> Download the models manually: duc_se.pth : https://drive.google.com/uc?id=1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW&export=download, yolov3-spp.weights: https://drive.google.com/uc?id=1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC&export=download
->> Place them into ${AIRCAPDIR}/git/Alphapose/models/sppe and ${AIRCAPDIR}/git/Alphapose/models/yolo respectively.
-> Enabling SPIN
->> Download the *SMPL* model. You will need the [neutral model](http://smplify.is.tue.mpg.de) for running the.  Please go to the websites for the corresponding projects and register to get access to the downloads section. In case you need to convert the models to be compatible with python3, please follow the instructions [here](https://github.com/vchoutas/smplx/tree/master/tools).
->> Rename downloaded smpl neutral model as "SMPL_NEUTRAL.pkl". Place the smpl neutral model in ${AIRCAPDIR}/git/SPIN/data/smpl
-> Enabling Multi-View HMR
->>  We use tensorflow 1.12.0 specified in ${AIRCAP_PATH}/multihmr_node/requirements.txt. Edit this file to use a different version.
->>  We tested on cuda-9.0 and cudnn-7.3-cu9.0. Do not forget to export all environment variables
->>  Download pretrained multi-view HMR model here: https://drive.google.com/file/d/1grEX6HmqL6CKittCyl_N6nggqIRIEOCt/view
->>   Extract the downloaded file into ${AIRCAPDIR}/git/HumanMultiView/
+
+1. Enabling alphapose ros node
+
+     - Download the models manually: duc_se.pth : https://drive.google.com/uc?id=1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW&export=download, yolov3-spp.weights: https://drive.google.com/uc?id=1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC&export=download
+
+     - Place them into ${AIRCAPDIR}/git/Alphapose/models/sppe and ${AIRCAPDIR}/git/Alphapose/models/yolo respectively.
+
+2. Enabling SPIN
+
+     - Download the *SMPL* model. You will need the [neutral model](http://smplify.is.tue.mpg.de) for running the.  Please go to the websites for the corresponding projects and register to get access to the downloads section. In case you need to convert the models to be compatible with python3, please follow the instructions [here](https://github.com/vchoutas/smplx/tree/master/tools).
+
+     - Rename downloaded smpl neutral model as "SMPL_NEUTRAL.pkl". Place the smpl neutral model in ${AIRCAPDIR}/git/SPIN/data/smpl
+
+3.  Enabling Multi-View HMR
+     -  We use tensorflow 1.12.0 specified in ${AIRCAP_PATH}/multihmr_node/requirements.txt. Edit this file to use a different version.
+
+     -  We tested on cuda-9.0 and cudnn-7.3-cu9.0. Do not forget to export all environment variables
+
+     -  Download pretrained multi-view HMR model here: https://drive.google.com/file/d/1grEX6HmqL6CKittCyl_N6nggqIRIEOCt/view
+
+     -   Extract the downloaded file into ${AIRCAPDIR}/git/HumanMultiView/
 
