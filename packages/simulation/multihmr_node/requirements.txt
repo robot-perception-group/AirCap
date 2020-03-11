@@ -1,0 +1,11 @@
+# python requirements
+pip>=9.0
+tensorflow-gpu==1.12.0
+scipy
+numpy
+matplotlib
+scikit-image
+deepdish>=0.3
+opencv-python
+absl-py
+ipdb

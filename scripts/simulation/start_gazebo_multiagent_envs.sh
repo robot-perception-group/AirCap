@@ -88,25 +88,17 @@ screen -S envsim_${env_id} -X title "ACTOR_JOINTS${env_id}"
 echo "Started Actor Joint Publisher"
 
 
-# echo "Starting SPIN"
-# screen -S envsim_${env_id} -X screen bash -i -c "export ROS_MASTER_URI=${ROS_MASTER}${env_id}; export GAZEBO_MASTER_URI=${GAZEBO_MASTER}${env_id}; export ROS_IP=${GAZEBOIP}; export ROS_HOSTNAME=${GAZEBOIP}; . ~/spin/bin/activate; . ~/hmr_ws/devel/setup.bash ; rosrun hmr_node hmr_pub.py 1"
-# screen -S envsim_${env_id} -X title HMR${env_id}
-# sleep 5
+sleep 5
+echo "Starting MHMR"
+screen -S envsim_${env_id} -X screen bash -i -c "export ROS_MASTER_URI=${ROS_MASTER}${env_id}; export GAZEBO_MASTER_URI=${GAZEBO_MASTER}${env_id}; export ROS_IP=${GAZEBOIP}; export ROS_HOSTNAME=${GAZEBOIP}; . $AIRCAPDIR/multihmr_ws/devel_isolated/setup.bash ; . $AIRCAPDIR/venv/mhmr/bin/activate;  rosrun multihmr_node multihmr_pub.py 1"
+screen -S envsim_${env_id} -X title MHMR${env_id}
+sleep 20
 
 
-# sleep 5
-# echo "Starting MHMR"
-# screen -S envsim_${env_id} -X screen bash -i -c "export ROS_MASTER_URI=${ROS_MASTER}${env_id}; export GAZEBO_MASTER_URI=${GAZEBO_MASTER}${env_id}; export ROS_IP=${GAZEBOIP}; export ROS_HOSTNAME=${GAZEBOIP}; . ~/mhmr/bin/activate; . ~/multihmr_ws/devel/setup.bash ; rosrun multihmr_node multihmr_pub.py 1"
-# screen -S envsim_${env_id} -X title MHMR${env_id}
-# sleep 20
-
-
-# if [ ${env_id} -lt 3 ]; then
-# echo "Starting Alphapose"
-# screen -S envsim_${env_id} -X screen bash -i -c "export ROS_MASTER_URI=${ROS_MASTER}${env_id}; export GAZEBO_MASTER_URI=${GAZEBO_MASTER}${env_id}; export ROS_IP=${GAZEBOIP}; export ROS_HOSTNAME=${GAZEBOIP}; . ~/alphapose/bin/activate; . ~/alphapose_ws/devel/setup.bash ; rosrun alphapose_node alphapose_cropped.py --num_machines=2"
-# screen -S envsim_${env_id} -X title ALPHA${env_id}
-# sleep 5
-# fi
+echo "Starting Alphapose"
+screen -S envsim_${env_id} -X screen bash -i -c "export ROS_MASTER_URI=${ROS_MASTER}${env_id}; export GAZEBO_MASTER_URI=${GAZEBO_MASTER}${env_id}; export ROS_IP=${GAZEBOIP}; export ROS_HOSTNAME=${GAZEBOIP};  . $AIRCAPDIR/alphapose_ws/devel/setup.bash ; . $AIRCAPDIR/venv/alphapose/bin/activate;rosrun alphapose_node alphapose_cropped.py --num_machines=2"
+screen -S envsim_${env_id} -X title ALPHA${env_id}
+sleep 5
 
 ########## START DRL TESTING ##############3
 echo "Starting MultiAgent Deep RL testing"

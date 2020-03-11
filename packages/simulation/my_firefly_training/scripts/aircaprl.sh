@@ -75,7 +75,7 @@ if [ $ROSVER == "melodic" ]; then
 			ln -s $AIRCAP_PATH/packages/simulation/Gazebo_Plugins/ && \
 			ln -s $AIRCAP_PATH/packages/simulation/librepilot_gazebo_bridge/ && \
 			ln -s $AIRCAP_PATH/packages/simulation/random_moving_target/ && \
-			ln -s $AIRCAP_PATH/packages/simulation/alphapose_node/ && \			
+			ln -s $AIRCAP_PATH/packages/simulation/alphapose_node/ && \						
 			ln -s $AIRCAPDIR$GIT_DIR/rotors_simulator/ 			
 
 			echo "CREATING ROS WORKSPACE FOR AIRCAP"
@@ -85,7 +85,8 @@ if [ $ROSVER == "melodic" ]; then
 			if grep -Fxq "source $AIRCAPDIR$AIRCAPWS_DIR/devel/setup.bash" ~/.bashrc ; then
 				echo "line already in bashrc"
 			else
-				echo "source $AIRCAPDIR$AIRCAPWS_DIR/devel/setup.bash" >> ~/.bashrc && . ~/.bashrc				
+				source $AIRCAPDIR$AIRCAPWS_DIR/devel/setup.bash
+				echo "source $AIRCAPDIR$AIRCAPWS_DIR/devel/setup.bash" >> ~/.bashrc && . ~/.bashrc								
 			fi
 		fi
 	fi
