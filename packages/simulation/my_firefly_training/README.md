@@ -171,7 +171,7 @@ Switch between different windows in screen using the shortcut ctrl+A+N
 ### (Optional) 11. Recording rewards in rosbags
 - Until step 9 setting record-bag-flag will record images but it will not record rewards. This is because the rewards are obtained from pose and shape-estimation neural networks.
 - Here we describe how to record the rewards into rosbags during testing.
-a. Enabling alphapose ros node
-- Download the models manually: duc_se.pth : https://drive.google.com/uc?id=1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW&export=download, yolov3-spp.weights: https://drive.google.com/uc?id=1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC&export=download
-- Place them into ${AIRCAPDIR}/git/Alphapose/models/sppe and ${AIRCAPDIR}/git/Alphapose/models/yolo respectively.
+> Enabling alphapose ros node
+>> Download the models manually: duc_se.pth : https://drive.google.com/uc?id=1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW&export=download, yolov3-spp.weights: https://drive.google.com/uc?id=1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC&export=download
+>> Place them into ${AIRCAPDIR}/git/Alphapose/models/sppe and ${AIRCAPDIR}/git/Alphapose/models/yolo respectively.
 

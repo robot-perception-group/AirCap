@@ -20,6 +20,7 @@ if [ $ROSVER == "melodic" ]; then
 	echo ros version $ROSVER
 	if [ -d $AIRCAPDIR ]; then
         source /home/${USER}/.bashrc
+        source $AIRCAPDIR/aircap_ws/devel/setup.bash
 		echo "Downloading git repositories to folder echo $AIRCAPDIR$GIT_DIR"
 		cd $AIRCAPDIR$GIT_DIR
 		# Download AIRCAPRL and Rotors Simulator Repos
