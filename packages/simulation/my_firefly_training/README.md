@@ -9,7 +9,7 @@ sudo apt install python-rosinstall python-rosinstall-generator python-wstool bui
 
 ### 2. Clone aircaprl repository
 ```
-cd && git clone -b aircaprl https://gitlab.tuebingen.mpg.de/aahmad/aircap.git
+cd && git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
 ```
 
 ### 3. Export aircap environment variables to .bashrc and run the setup script to download all dependencies for aircap
