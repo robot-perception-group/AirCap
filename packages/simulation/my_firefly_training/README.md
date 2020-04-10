@@ -16,7 +16,7 @@ cd && git clone -b aircaprl https://github.com/robot-perception-group/AirCap.git
 **export "AIRCAP_PATH" to the path of the git repository you just downloaded as shown below.**<br/>  
 **export "AIRCAPDIR" to the path where all aircaprl packages need to be installed as shown below. We recommend setting this to  /home/${USER}/aircaprl as seen below.**  
 ```
-echo "export AIRCAP_PATH=/home/${USER}/aircap" >> ~/.bashrc
+echo "export AIRCAP_PATH=/home/${USER}/Aircap" >> ~/.bashrc
 echo "export AIRCAPDIR=/home/$USER/aircaprl" >> ~/.bashrc
 source ~/.bashrc
 cd ${AIRCAP_PATH}/packages/simulation/my_firefly_training/scripts
