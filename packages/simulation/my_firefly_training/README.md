@@ -194,3 +194,6 @@ Switch between different windows in screen using the shortcut ctrl+A+N
 
      -   Extract the downloaded file into ${AIRCAPDIR}/git/HumanMultiView/
 
+
+### (Optional) 12. Evaluating the recorded rosbags
+- The jupyter notebooks provided in the folder my_firefly_training/evaluation_jupyter_notebooks provide instructions of how to convert the rosbags to csvs which can be useful for plotting.
