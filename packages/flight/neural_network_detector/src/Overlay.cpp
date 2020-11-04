@@ -20,6 +20,7 @@ Overlay::Overlay(){
     pnh_.getParam("save_video/flag", save_video_flag_);
     pnh_.getParam("save_video/filename", video_filename_);
     pnh_.param<double>("save_video/fps", fps_, 40.0);
+    pnh_.getParam("aspect_ratio", aspect_ratio);
 
     ROS_INFO("Waiting for valid clock");
     ros::Time::waitForValid();
@@ -122,7 +123,7 @@ void Overlay::imgCallback(const sensor_msgs::ImageConstPtr &msgp) {
 
     // Create an auxiliary, custom projection object to aid in calculations
     cv::projection2i proj_crop(cv::Point2f(1, 1), cv::Point2i(0, 0));
-    const auto crop_area = get_crop_area(*latest_feedback, original_resolution, desired_resolution, proj_crop, timed_out);
+    const auto crop_area = get_crop_area(*latest_feedback, original_resolution, desired_resolution, aspect_ratio, proj_crop, timed_out);
 
     if(has_detection) {
         const auto &detection_array = time_detection_pair->second;

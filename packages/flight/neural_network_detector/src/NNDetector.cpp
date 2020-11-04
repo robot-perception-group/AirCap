@@ -11,7 +11,7 @@ namespace neural_network_detector {
 
 static const int color_channels = 3;
 
-cv::Rect get_crop_area(const NeuralNetworkFeedback &latest_feedback, const cv::Size2i &original_resolution, const cv::Size2i &desired_resolution, cv::projection2i& proj_crop, const bool timed_out=false) {
+cv::Rect get_crop_area(const NeuralNetworkFeedback &latest_feedback, const cv::Size2i &original_resolution, const cv::Size2i &desired_resolution, float aspect_ratio, cv::projection2i& proj_crop, const bool timed_out=false) {
 
   // Feedback - zoom level
   if(timed_out || latest_feedback.ymin > original_resolution.height || latest_feedback.ymax < 0) {
@@ -19,14 +19,17 @@ cv::Rect get_crop_area(const NeuralNetworkFeedback &latest_feedback, const cv::S
     // We want the whole image in this case
     // Crop the image to 4:3 taking into account the height, width and desired resolution
     // Different operations if landscape or portrait (squared image will be handled as portrait, same result)
-    if (original_resolution.height < original_resolution.width) {
-      int crop_length = (int) ((4.0 / 3.0) * original_resolution.height);
+    bool landscape_origin=(original_resolution.height <= original_resolution.width);
+    bool landscape_target=(aspect_ratio>=1.0);
+    bool same_aspect=(landscape_origin==landscape_target);
+    if (same_aspect) {
+      int crop_length = (int) (aspect_ratio * original_resolution.height);
       // clamp to resolution
       crop_length = std::min<int>(crop_length, original_resolution.width);
       proj_crop.offset.x = (original_resolution.width - crop_length) / 2;
       return cv::Rect(proj_crop << cv::Point2i(0, 0), proj_crop << cv::Point2i(crop_length, original_resolution.height));
     } else {
-      int crop_length = (int) ((3.0 / 4.0) * original_resolution.width);
+      int crop_length = (int) ((1.0 / aspect_ratio) * original_resolution.width);
       // clamp to resolution
       crop_length = std::min<int>(crop_length, original_resolution.height);
       proj_crop.offset.y = (original_resolution.height - crop_length) / 2;
@@ -38,10 +41,10 @@ cv::Rect get_crop_area(const NeuralNetworkFeedback &latest_feedback, const cv::S
     int16_t ymin = std::max<int16_t>(latest_feedback.ymin, 0);
     int16_t ymax = std::min<int16_t>(latest_feedback.ymax, original_resolution.height);
 
-    // Given a 4:3 aspect ratio that the NN wants, obtain x values
+    // Given the aspect ratio that the NN wants, obtain x values
     // Minimum of 10% of desired resolution is required
     int16_t delta_y = std::max<int16_t>((int16_t)(.1*desired_resolution.height), ymax - ymin);
-    int16_t delta_x = (int16_t) (4.0/3.0 * delta_y);
+    int16_t delta_x = (int16_t) (aspect_ratio * delta_y);
 
     // X center is within image bounds and half the length
     int16_t half_delta_x = (int16_t)(.5 * delta_x);
@@ -83,6 +86,7 @@ NNDetector::NNDetector(char *host, char *port) : host_{host}, port_{port} {
 
   pnh_.getParam("score_threshold", score_threshold);
   pnh_.getParam("desired_class", desired_class);
+  pnh_.getParam("aspect_ratio", aspect_ratio);
 
   double timeout_sec = 5.0;
   pnh_.getParam("timeout_seconds", timeout_sec);
@@ -209,7 +213,7 @@ void NNDetector::imgCallback(const sensor_msgs::ImageConstPtr &msgp) {
 
     // Create an auxiliary, custom projection object to aid in calculations
     cv::projection2i proj_crop(cv::Point2f(1, 1), cv::Point2i(0, 0));
-    const auto crop_area = get_crop_area(latest_feedback_, original_resolution, desired_resolution, proj_crop, timed_out);
+    const auto crop_area = get_crop_area(latest_feedback_, original_resolution, desired_resolution, aspect_ratio, proj_crop, timed_out);
 
 //    ROS_INFO_STREAM("crop " << crop_area);
     cv::Mat cropped = mat_img_(crop_area);
@@ -271,6 +275,12 @@ void NNDetector::imgCallback(const sensor_msgs::ImageConstPtr &msgp) {
         continue;
 
       detection_info det = results->detection[det_number];
+      if (det.xmin==det.xmax) {
+          det.xmax++;
+      }
+      if (det.ymin==det.ymax) {
+          det.ymax++;
+      }
 
       // Create and send one message for each detection above the score threshold
       // It is the job of the tracker to filter outliers

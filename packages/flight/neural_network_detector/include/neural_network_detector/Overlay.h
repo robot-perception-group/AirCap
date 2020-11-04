@@ -51,6 +51,7 @@ namespace neural_network_detector {
 
     public:
         cv::Size2i desired_resolution;
+        float aspect_ratio{1.33333};
 
         // Constructor
         Overlay();

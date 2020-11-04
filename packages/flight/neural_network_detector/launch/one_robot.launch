@@ -16,12 +16,13 @@
 
     <arg name="max_update_force" default="false"/>
     <arg name="max_update_rate" default="1.0"/>
+    <arg name="network_model" default="ssd_300.yaml"/>
 
     <group ns="$(arg namespace)">
         <arg name="name" value="neural_network_detector"/>
         <node name="$(arg name)" pkg="neural_network_detector" type="neural_network_detector_node" output="screen"
               args="$(arg host) $(arg port)">
-            <rosparam command="load" file="$(find neural_network_detector)/config/ssd_300.yaml"/>
+            <rosparam command="load" file="$(find neural_network_detector)/config/$(arg network_model)"/>
             <param name="img_topic" value="$(arg img_topic)" type="string"/>
             <param name="detections_topic" value="$(arg detections_topic)" type="string"/>
             <param name="feedback_topic" value="$(arg feedback_topic)" type="string"/>

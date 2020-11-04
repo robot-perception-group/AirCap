@@ -34,7 +34,7 @@ typedef struct __attribute__ ((__packed__)) {
   detection_info detection[INT_MAX]; // over_allocated since variable length arrays are not allowed in C++
 } detection_results;
 
-cv::Rect get_crop_area(const NeuralNetworkFeedback &latest_feedback, const cv::Size2i &original_resolution, const cv::Size2i &desired_resolution, cv::projection2i& proj_crop, bool timed_out);
+cv::Rect get_crop_area(const NeuralNetworkFeedback &latest_feedback, const cv::Size2i &original_resolution, const cv::Size2i &desired_resolution, float aspect_ratio, cv::projection2i& proj_crop, bool timed_out);
 
 class NNDetector {
 private:
@@ -64,6 +64,7 @@ public:
   cv::Size2i desired_resolution;
   float score_threshold{0.5};
   int desired_class{15};
+  float aspect_ratio{1.33333};
   float var_const_x_min{0}, var_const_x_max{0}, var_const_y_min{0}, var_const_y_max{0};
 
   bool max_update_force{false};
