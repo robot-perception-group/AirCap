@@ -7,7 +7,7 @@ COMSUCCESSRATE=$2
 
 NAME=$3
 
-WORLD="arena_ICRA"
+WORLD="arena_RAL"
 
 
 
