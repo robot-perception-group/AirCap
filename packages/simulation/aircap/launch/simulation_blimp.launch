@@ -73,10 +73,6 @@
 	<arg name="usingSimulation" value="0" />
     </include>
 
-    <include file="$(find librepilot_gazebo_bridge)/launch/default.launch">
-        <arg name="robotID" value="$(arg robotID)" />
-    </include>
-
     <include file="$(find fake_communication_failure)/launch/default.launch">
         <arg name="robotID" value="$(arg robotID)" />
         <arg name="comSuccessRate" value="$(arg comSuccessRate)" />
