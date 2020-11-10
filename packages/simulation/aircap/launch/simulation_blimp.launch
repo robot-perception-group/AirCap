@@ -18,6 +18,10 @@
     <arg name="max_update_force" default="true"/>
     <arg name="max_update_rate" default="4"/>
     <arg name="comSuccessRate" default="100"/>
+    <arg name="X" default="0.0"/>
+    <arg name="Y" default="0.0"/>
+    <arg name="Z" default="1.0"/>
+
 
     <include file="$(find target_tracker_distributed_kf)/launch/tracker.launch">
 	      <arg name="robotID" value="$(arg robotID)" />
@@ -102,6 +106,10 @@
 
     <!-- the blimp -->
     <include file="$(find blimp_description)/launch/blimp_only.launch">
-	    <arg name="uav_name" value="machine_$(arg robotID)" />
+        <arg name="uav_name" value="machine_$(arg robotID)" />
+        <arg name="X" value="$(arg X)" />
+        <arg name="Y" value="$(arg Y)" />
+        <arg name="Z" value="$(arg Z)" />
+
     </include>
 </launch>

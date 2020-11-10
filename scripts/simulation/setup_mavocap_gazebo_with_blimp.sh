@@ -1,11 +1,14 @@
 #!/bin/bash
 
 
-ROBOS=$1
+QUADS=$1
+BLIMPS=$2
 
-COMSUCCESSRATE=$2
+ROBOS=$(( QUADS+BLIMPS ))
 
-NAME=$3
+COMSUCCESSRATE=$3
+
+NAME=$4
 
 WORLD="arena_RAL"
 
@@ -26,8 +29,8 @@ Xs=( -15 -10 -8 -6 -4 5 0 2 4 6 8 10 15)
 Ys=( -15 -10 -8 -6 -4 5 0 2 4 6 8 10 15)
 # LOGPATH="/media/ssd/RECORD"
 
-if [ $# -lt 1 ]; then
-        echo "usage: $0 <number of robots> <communication success rate> <experiment title>"
+if [ $# -lt 2 ]; then
+        echo "usage: $0 <number of quadcopters> <number of blimps> <communication success rate> <experiment title>"
         exit 1
 fi
 
@@ -65,8 +68,8 @@ screen -d -m -S TARGET bash -i -c "roslaunch random_moving_target spawn_target_w
 
 
 
-for i in $(seq 0 $(($ROBOS-2))); do
-	id=$(($i+1))
+for i in $(seq 0 $(($QUADS-1))); do
+	id=$(( i+1 ))
 	echo "launching robot $id"
 	screen -d -m -S FIREFLY$id bash -i -c "roslaunch rotors_gazebo mav_with_joy_and_ID.launch roboID:=$id Z:=8 X:=${Xs[$i]}  Y:=${Ys[$i]} --screen"
 	#sleep 10
@@ -103,9 +106,12 @@ for i in $(seq 0 $(($ROBOS-2))); do
 
 done
 
-id=$(( ROBOS ))
-echo "Starting AIRCAP for blimp $id"
-screen -d -m -S AIRCAP$id bash -i -c "roslaunch aircap simulation_blimp.launch robotID:=$id numRobots:=$ROBOS comSuccessRate:=$COMSUCCESSRATE --screen"
+for i in $(seq 0 $(($BLIMPS-1))); do
+    id=$(( QUADS + i + 1 ))
+    echo "Starting Blimp $id"
+    screen -d -m -S AIRCAP$id bash -i -c "roslaunch aircap simulation_blimp.launch robotID:=$id numRobots:=$ROBOS comSuccessRate:=$COMSUCCESSRATE Z:=8 X:=${Xs[$id]}  Y:=${Ys[$id]} --screen"
+    sleep 5
+done
 
 
 # wait 30 seconds for robots to assume position
