@@ -5,6 +5,13 @@
     <arg name="numRobots" default="1" />
     <arg name="gpuHost" default="localhost" />
     <arg name="gpuPort" default="9900" />
+    <arg name="librepilotBasePort" default="9002" />
+    <arg name="librepilotOffset" default="100" />
+    <arg name="librepilotPort" default="$(eval arg('librepilotBasePort') + arg('librepilotOffset')*(arg('robotID')-1) )" />
+    <arg name="librepilotIP" default="127.0.0.1" />
+    <arg name="librepilotUseUDP" default="true" />
+    <arg name="librepilotBaud" default="115200" />
+    <arg name="librepilotDevice" default="/dev/flightcontroller_serial" />
     <arg name="rvizView" default="false" />
     <arg name="addOffset" default="false"/>
     <arg name="addCovariance" default="true"/>
@@ -59,9 +66,16 @@
         <arg name="robotID" value="$(arg robotID)" />
         <arg name="topic" value="camera_info"/>
     </include>
-    <group ns="machine_$(arg robotID)">
+
+    <group ns="machine_$(arg robotID)" unless="$(arg librepilotUseUDP)">
 	    <arg name="name" value="librepilot_node_$(arg robotID)" />
-	    <node name="$(arg name)" pkg="librepilot" type="librepilot_node" output="screen" args="/machine_$(arg robotID) /dev/flightcontroller_serial 115200">
+	    <node name="$(arg name)" pkg="librepilot" type="librepilot_node" output="screen" args="/machine_$(arg robotID) $(arg librepilotDevice) $(arg librepilotBaud)">
+		    <remap from="/machine_$(arg robotID)/offset" to="/machine_$(arg robotID)/target_tracker/offset" />
+	    </node>
+    </group>
+    <group ns="machine_$(arg robotID)" if="$(arg librepilotUseUDP)">
+	    <arg name="name" value="librepilot_node_$(arg robotID)" />
+	    <node name="$(arg name)" pkg="librepilot" type="librepilot_node" output="screen" args="/machine_$(arg robotID) UDP $(arg librepilotIP) $(arg librepilotPort)">
 		    <remap from="/machine_$(arg robotID)/offset" to="/machine_$(arg robotID)/target_tracker/offset" />
 	    </node>
     </group>
