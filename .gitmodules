@@ -1,0 +1,16 @@
+[submodule "packages/3rdparty/mrpt_bridge"]
+	path = packages/3rdparty/mrpt_bridge
+	url = https://github.com/mrpt-ros-pkg/mrpt_bridge.git
+	branch = ros1
+[submodule "packages/3rdparty/pose_cov_ops"]
+	path = packages/3rdparty/pose_cov_ops
+	url = https://github.com/mrpt-ros-pkg/pose_cov_ops.git
+	branch = master
+[submodule "packages/3rdparty/rotors_simulator"]
+	path = packages/3rdparty/rotors_simulator
+	url = https://github.com/robot-perception-group/rotors_simulator.git
+	branch = aircap_noetic_fixes
+[submodule "packages/3rdparty/rviz_plugin_covariance"]
+	path = packages/3rdparty/rviz_plugin_covariance
+	url = https://github.com/laas/rviz_plugin_covariance.git
+	branch = master
