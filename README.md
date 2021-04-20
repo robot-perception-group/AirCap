@@ -36,7 +36,8 @@ Build packages with **catkin_make**
 * [MRPT] (https://docs.mrpt.org/reference/latest/download-mrpt.html#debian-ubuntu-ppa)
 * [SSD Multibox Detection Server] (https://github.com/robot-perception-group/caffe.git) branch AIRCAP-noetic
 * [fkie_multimaster] (http://wiki.ros.org/fkie_multimaster)
-* [3rd party plugins] (Please clone repository with --recurse-submodules - includes LibrePilot, mrpt-bridge, pose_cov_ops, etc...)
+* [Librepilot] (https://github.com/robot-perception-group/LibrePilot) branch airship_control_noetic
+* [3rd party plugins] (Please clone repository with --recurse-submodules - includes mrpt-bridge, rotors_gazebo, pose_cov_ops, etc...)
 
 ## Additional Requirements for simulation:
 
