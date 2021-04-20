@@ -42,13 +42,13 @@ Overlay::Overlay(){
 }
 
 void Overlay::startSubscribers() {
-    std::__cxx11::string img_topic{"video"};
+    std::string img_topic{"video"};
     pnh_.getParam("img_topic", img_topic);
 
-    std::__cxx11::string detections_topic{"object_detections"};
+    std::string detections_topic{"object_detections"};
     pnh_.getParam("detections_topic", detections_topic);
 
-    std::__cxx11::string feedback_topic{"object_detections/feedback"};
+    std::string feedback_topic{"object_detections/feedback"};
     pnh_.getParam("feedback_topic", feedback_topic);
 
     // Feedback subscriber and cache
