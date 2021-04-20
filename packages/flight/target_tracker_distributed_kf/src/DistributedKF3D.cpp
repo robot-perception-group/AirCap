@@ -2,8 +2,7 @@
 // Created by glawless on 23.05.17.
 //
 
-#include <mrpt/poses.h>
-#include <mrpt/math.h>
+#include <mrpt/math/distributions.h>
 #include <mrpt_bridge/mrpt_bridge.h>
 #include <target_tracker_distributed_kf/DistributedKF3D.h>
 #include <ros/callback_queue.h>
@@ -320,11 +319,14 @@ namespace target_tracker_distributed_kf {
             pose_cov_ops::compose(state,distribution,merged);
 
             // calculate normalized expectance density at the mean of the observed measurement
-            mrpt::math::CMatrixDouble31 statemean,measurementmean;
-            mrpt::math::CMatrixDouble33 expectance;
-            statemean << elem.state(0), elem.state(1), elem.state(2);
-            measurementmean << closest_measurement->pose.position.x, closest_measurement->pose.position.y, closest_measurement->pose.position.z;
-            expectance << merged.covariance[0*6+0], merged.covariance[0*6+1], merged.covariance[0*6+2], merged.covariance[1*6+0], merged.covariance[1*6+1], merged.covariance[1*6+2], merged.covariance[2*6+0], merged.covariance[2*6+1], merged.covariance[2*6+2];
+            //mrpt::math::CMatrixDouble31 statemean,measurementmean;
+            Eigen::Matrix<double,3,1> statemeanE,measurementmeanE;
+            Eigen::Matrix<double,3,3> expectanceE;
+            statemeanE << elem.state(0), elem.state(1), elem.state(2);
+            measurementmeanE << closest_measurement->pose.position.x, closest_measurement->pose.position.y, closest_measurement->pose.position.z;
+            expectanceE << merged.covariance[0*6+0], merged.covariance[0*6+1], merged.covariance[0*6+2], merged.covariance[1*6+0], merged.covariance[1*6+1], merged.covariance[1*6+2], merged.covariance[2*6+0], merged.covariance[2*6+1], merged.covariance[2*6+2];
+            mrpt::math::CMatrixDouble31 statemean(statemeanE),measurementmean(measurementmeanE);
+            mrpt::math::CMatrixDouble33 expectance(expectanceE);
             double density = mrpt::math::normalPDF(measurementmean, statemean, expectance) / mrpt::math::normalPDF(statemean, statemean, expectance);
 
             // normalizeed density function with sigma=1 and mu=0:  e^(-1/2 * x^2 )

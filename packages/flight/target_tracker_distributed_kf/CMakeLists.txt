@@ -41,10 +41,7 @@ endif()
 
 # This flag is used so that we don't have "no debug" issues
 set(MRPT_DONT_USE_DBG_LIBS 1)
-FIND_PACKAGE(MRPT REQUIRED COMPONENTS
-  base
-  maps
-)
+find_package(MRPT 1.5 REQUIRED math)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)

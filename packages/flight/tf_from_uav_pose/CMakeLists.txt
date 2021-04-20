@@ -29,10 +29,7 @@ endif()
 
 # This flag is used so that we don't have "no debug" issues
 set(MRPT_DONT_USE_DBG_LIBS 1)
-FIND_PACKAGE(MRPT REQUIRED COMPONENTS
-  base
-  maps
-)
+find_package(MRPT 1.5 REQUIRED poses )
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -185,7 +182,7 @@ add_dependencies(${PROJECT_NAME}_node ${PROJECT_NAME}_gencfg)
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   ${MRPT_LIBRARIES}
-  mrpt-base
+  mrpt-poses
 )
 
 #############

@@ -6,8 +6,10 @@
 #include <tf_from_uav_pose/tf_from_uav_pose.h>
 #include <tf/transform_datatypes.h>
 
-#include <mrpt/poses.h>
-#include <mrpt/math.h>
+//#include <mrpt/poses.h>
+//#include <mrpt/math.h>
+#include <mrpt/poses/CPose3DQuatPDFGaussian.h>
+#include <mrpt/poses/CPose3DPDFGaussian.h>
 #include <mrpt_bridge/mrpt_bridge.h>
 
 namespace tf_from_uav_pose {
