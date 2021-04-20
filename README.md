@@ -10,7 +10,7 @@ NEWS:  Nodes and packages specific to our submission to RA-L + IROS 2019 added. 
 
 All Code in this repository - unless otherwise stated in local license or code headers is
 
-Copyright 2018 Max Planck Institute for Intelligent Systems
+Copyright 2016-2021 Max Planck Institute for Intelligent Systems
 
 Licensed under the terms of the GNU General Public Licence (GPL) v3 or higher.
 See: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -22,6 +22,7 @@ ROS Packages:
 * /packages/flight -- mandatory packages needed for/on aerial vehicles
 * /packages/optional -- packages required for specific hardware (camera interface modules)
 * /packages/replay -- packages needed to replay data on the ground
+* /packages/3rdparty -- git submodules required by this project
 * /scrips/ -- start and stop scripts to run everything locally and remotely on real robots - see readme.txt in that directory
 * /scrips/simulation -- start and stop scripts to run a swarm formation in gazebo simulation - needs additional dependencies
 
@@ -31,20 +32,15 @@ Link or copy all flight and optional packages required into the *src* folder of 
 Build packages with **catkin_make**
 
 ## Requirements:
-* [ROS] (http://wiki.ros.org/kinetic) 
-* [LibrePilot ROS Interface] (https://github.com/AIRCAP/LibrePilot)
-* [SSD Multibox Detection Server] (https://github.com/AIRCAP/caffe)
-* [modified g2o] (https://github.com/aamirahmad/g2o)
+* [ROS] (http://wiki.ros.org/noetic)
+* [MRPT] (https://docs.mrpt.org/reference/latest/download-mrpt.html#debian-ubuntu-ppa)
+* [SSD Multibox Detection Server] (https://github.com/robot-perception-group/caffe.git) branch AIRCAP-noetic
 * [fkie_multimaster] (http://wiki.ros.org/fkie_multimaster)
-* [mav_msgs] (http://wiki.ros.org/mav_msgs)
-* [mrpt_bridge] (http://wiki.ros.org/mrpt_bridge)
-* [pose_cov_ops] (http://wiki.ros.org/pose_cov_op)
-* [rviz_plugin_covariance] (http://wiki.ros.org/rviz_plugin_covariance) (optional, for rviz isualization)
+* [3rd porty plugins] (Please clone repository with --recurse-submodules - includes LibrePilot, mrpt-bridge, pose_cov_ops, etc...)
 
 ## Additional Requirements for simulation:
 
-* [Gazebo] (http://gazebosim.org/) -- tested with Gazebo 8.6
-* [rotors_simulator] (https://github.com/AIRCAP/rotors_simulator) -- hint: add the entire tree to catkin_ws/src
+* [Gazebo] (http://gazebosim.org/) -- tested with Gazebo 11
 
 # Setup
 
