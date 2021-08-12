@@ -29,7 +29,7 @@
         <arg name="measurement_topic_suffix" default="object_detections/projected_to_world_network"/>
     </include>
 
-    <include file="$(find tf_from_uav_pose)/launch/for_one_robot.launch">
+    <include file="$(find tf_from_uav_pose)/launch/for_blimp.launch">
         <arg name="robotID" value="$(arg robotID)" />
 	<!--
         <arg name="cameraStaticPublish" value="true"/>

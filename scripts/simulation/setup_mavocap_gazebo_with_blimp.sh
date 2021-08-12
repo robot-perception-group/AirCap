@@ -10,7 +10,7 @@ COMSUCCESSRATE=$3
 
 NAME=$4
 
-WORLD="arena_RAL"
+WORLD="arena_BLIMP"
 
 
 
