@@ -84,12 +84,25 @@
 	    </node>
     </group>
 
-    <include file="$(find nmpc_planner)/launch/planner_activeTracking.launch">
+    <!--<include file="$(find nmpc_planner)/launch/planner_activeTracking.launch">
         <arg name="robotID" value="$(arg robotID)" />
         <arg name="NUM_ROBOTS" value="$(arg numRobots)" />
 	<arg name="NEIGHBOR_TOPIC" value="/throttledPoseComFail"/>
 	<arg name="usingSimulation" value="0" />
-    </include>
+    </include>-->
+    <group ns="machine_$(arg robotID)">
+	    <arg name="name" value="nmpc_blimp_planner" />
+            <node name="$(arg name)" pkg="nmpc_blimp_formation_planner" type="nmpc_blimp_planner" output="screen" >
+                <rosparam file="$(find nmpc_blimp_formation_planner)/config/open_params.yaml" />
+	    </node>
+    </group>
+    <group ns="machine_$(arg robotID)">
+	    <arg name="name" value="blimp_nmpc_wrapper_node" />
+            <node name="$(arg name)" pkg="blimp_nmpc_wrapper_node" type="blimp_nmpc_wrapper_node.py" output="screen" >
+                <param name="robotID" value="$(arg robotID)" />
+                <param name="numRobots" value="$(arg numRobots)" />
+	    </node>
+    </group>
 
     <include file="$(find fake_communication_failure)/launch/default.launch">
         <arg name="robotID" value="$(arg robotID)" />

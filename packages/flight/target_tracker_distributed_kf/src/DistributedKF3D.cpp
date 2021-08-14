@@ -472,9 +472,21 @@ namespace target_tracker_distributed_kf {
 
         targetPub_.publish(msg_);
 
+        velMsg_.header.frame_id = elem.frame_id;
+        velMsg_.header.stamp = elem.stamp;
         velMsg_.twist.twist.linear.x = elem.state[3];
         velMsg_.twist.twist.linear.y = elem.state[4];
         velMsg_.twist.twist.linear.z = elem.state[5];
+        velMsg_.twist.covariance[ 0 * 6 + 0] = elem.cov(0 * 9 + 3);
+        velMsg_.twist.covariance[ 0 * 6 + 1] = elem.cov(0 * 9 + 4);
+        velMsg_.twist.covariance[ 0 * 6 + 2] = elem.cov(0 * 9 + 5);
+        velMsg_.twist.covariance[ 1 * 6 + 0] = elem.cov(1 * 9 + 3);
+        velMsg_.twist.covariance[ 1 * 6 + 1] = elem.cov(1 * 9 + 4);
+        velMsg_.twist.covariance[ 1 * 6 + 2] = elem.cov(1 * 9 + 5);
+        velMsg_.twist.covariance[ 2 * 6 + 0] = elem.cov(2 * 9 + 3);
+        velMsg_.twist.covariance[ 2 * 6 + 1] = elem.cov(2 * 9 + 4);
+        velMsg_.twist.covariance[ 2 * 6 + 2] = elem.cov(2 * 9 + 5);
+
         targetVelPub_.publish(velMsg_);
 
         ///*
