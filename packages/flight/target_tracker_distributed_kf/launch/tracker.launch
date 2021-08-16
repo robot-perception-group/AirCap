@@ -15,7 +15,7 @@
     <arg name="measurement_topic_suffix" default="object_detections/projected_to_world"/>
     <arg name="measurement_topic_suffix_self" default="object_detections/projected_to_world"/>
 
-    <arg name="reset_time_threshold" default="60"/>  <!--How long to wait before resetting if not receiving new measurements-->
+    <arg name="reset_time_threshold" default="10"/>  <!--How long to wait before resetting if not receiving new measurements-->
 
     <group ns="$(arg namespace)">
         <arg name="name" value="target_tracker_kf"/>
