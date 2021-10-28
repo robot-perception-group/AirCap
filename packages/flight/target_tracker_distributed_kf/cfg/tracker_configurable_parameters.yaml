@@ -12,6 +12,7 @@ noiseOffYVar: 0.02
 noiseOffZVar: 0.02
 velocityDecayTime: 3.0
 offsetDecayTime: 30.0
+falsePositiveThresholdSigma: 2.0
 initialUncertaintyPosXY: 100.0
 initialUncertaintyPosZ: 10.0
 initialUncertaintyVelXY: 1.0

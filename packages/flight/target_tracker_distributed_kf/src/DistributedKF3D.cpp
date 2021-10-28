@@ -336,7 +336,8 @@ namespace target_tracker_distributed_kf {
             // ignore measurement for self pose estimation if it is less likely to be a true positive than the prior likelihood for false positives.
             if ( x > falsePositiveThresholdSigma ) {
                 ROS_INFO_STREAM("Person Measurement likelihood " << x << " * sigma beyond threshold of " << falsePositiveThresholdSigma << " * sigma. Discarding!");
-                isSelf = false;
+		return true;
+                //isSelf = false;
             }
         }
 
