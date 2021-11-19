@@ -518,7 +518,7 @@ namespace airpose_client {
 
 		void AirPoseClient::resetLoop(uint64_t FrameNumber) {
 			timing_current_stage=-1;
-			timing_next_wakeup=getFrameTime(FrameNumber+1) - ros::Duration(timing_camera);
+			timing_next_wakeup=getFrameTime(FrameNumber+1);
 			sleep_until(timing_next_wakeup);
 			timing_current_stage=0;
 		}
@@ -534,7 +534,7 @@ namespace airpose_client {
 
 			while (ros::ok()) {
 				uint64_t currentFrame = getFrameNumber(ros::Time::now() + ros::Duration(timing_camera*0.5));
-				timing_next_wakeup = getFrameTime(currentFrame) + ros::Duration(timing_network_stage1+timing_communication_stage1);
+				timing_next_wakeup = getFrameTime(currentFrame) + ros::Duration(timing_camera + timing_network_stage1 + timing_communication_stage1);
 				sleep_until(timing_next_wakeup);
 				switch (timing_current_stage) {
 					case 1:
@@ -566,7 +566,7 @@ namespace airpose_client {
 				//EXCEPTION HANDLING (reconnect + resetLoop + continue)
 				//PUBLISH DATA TO OTHER COPTER
 
-				timing_next_wakeup = getFrameTime(currentFrame) + ros::Duration(timing_network_stage1 + timing_network_stage2 + timing_communication_stage1 + timing_communication_stage2);
+				timing_next_wakeup = getFrameTime(currentFrame) + ros::Duration(timing_camera + timing_network_stage1 + timing_network_stage2 + timing_communication_stage1 + timing_communication_stage2);
 				sleep_until(timing_next_wakeup);
 
 				// we are now in stage 3
