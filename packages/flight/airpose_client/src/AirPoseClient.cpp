@@ -111,6 +111,15 @@ namespace airpose_client {
 			pnh_.getParam("timeout_seconds", timeout_sec);
 			timeout_ = ros::Duration(timeout_sec);
 
+			pnh_getParam("timing/camera", timing_camera);
+			pnh_getParam("timing/network_stage1", timing_network_stage1);
+			pnh_getParam("timing/network_stage2", timing_network_stage2);
+			pnh_getParam("timing/network_stage3", timing_network_stage3);
+			pnh_getParam("timing/communication_stage1", timing_communication_stage1);
+			pnh_getParam("timing/communication_stage2", timing_communication_stage2);
+			pnh_getParam("timing/communication_stage3", timing_communication_stage3);
+			timing_whole_sequence = timing_network_stage1 + timing_network_stage2 + timing_network_stage3 + timing_communication_stage1 + timing_communication_stage2 + timing_camera;
+
 			pnh_.getParam("border_dropoff", border_dropoff_);
 
 			pnh_.getParam("variance/x/min", var_const_x_min);
@@ -206,6 +215,8 @@ namespace airpose_client {
 		}
 
 		bool AirPoseClient::connect() {
+			// reset sequencer on reconnect
+			timing_current_stage=-1;
 			try {
 				c_->connect(host_, port_, boost::posix_time::seconds(3));
 			}
@@ -226,6 +237,12 @@ namespace airpose_client {
 				ROS_WARN("Invalid ImageConstPtr received, not handled.");
 				return;
 			}
+
+			// check current state. we are only interested in new images prior to stage 1:
+			if (timing_current_stage!=0) {
+				return;
+			}
+			timing_current_stage=1;
 
 			//ROS_INFO("Callback called for image seq %d", msgp->header.seq);
 
@@ -302,10 +319,16 @@ namespace airpose_client {
 				//ROS_INFO("Sending to NN");
 				c_->write_bytes((uint8_t *) &first_msg_, sizeof(first_msg_), boost::posix_time::seconds(10));
 
+				
+
+
 				// Block while waiting for reply
 				// reusing image buffer:
 				detection_results *results = (detection_results *) buffer_results_.get();
 				//ROS_INFO("Receiving answer...");
+			
+				// IMPORTANT - the network finished executing - advancing sequencer
+				timing_current_stage=2;
 
 				// Read the count from the buffer
 				c_->read_bytes((uint8_t *) &results->count, sizeof(detection_results::count), boost::posix_time::seconds(
@@ -476,6 +499,92 @@ namespace airpose_client {
 		}
 
 		void AirPoseClient::step2Callback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg) {
+		}
+
+		uint64_t AirPoseClient::getFrameNumber(ros::Time frameTime) {
+			return ((uint64_t)(frameTime.toSec()/timing_whole_sequence));
+		}
+
+		ros::Time AirPoseClient::getFrameTime(uint64_t frameNumber) {
+			return ros::Time(((double)(frameNumber)) * ((double)(timing_whole_sequence)));
+		}
+
+		void sleep_until(ros::Time then) {
+			ros::Duration d(then-ros::Time::now())
+			if (d>0.0) {
+				d.sleep();
+			}
+		}
+
+		void AirPoseClient::resetLoop(uint64_t FrameNumber) {
+			timing_current_stage=-1;
+			timing_next_wakeup=getFrameTime(FrameNumber+1) - ros::Duration(timing_camera);
+			sleep_until(timing_next_wakeup);
+			timing_current_stage=0;
+		}
+
+		void AirPoseClient::mainLoop(void) {
+
+			// initial bootstrap - step is now -1
+			resetLoop(getFrameNumber(ros::Time::now())+1);
+
+			// stage set to 0 - stage1 - next frame will be received and sent to network
+			// stage is then set to 1 by img subscriber
+			// result will be received by the network
+
+			while (ros::ok()) {
+				uint64_t currentFrame = getFrameNumber(ros::Time::now() + ros::Duration(timing_camera*0.5));
+				timing_next_wakeup = getFrameTime(currentFrame) + ros::Duration(timing_network_stage1+timing_communication_stage1);
+				sleep_until(timing_next_wakeup);
+				switch (timing_current_stage) {
+					case 1:
+						// image was received but neural network never sent a result back
+						while (timing_current_stage==1) {
+							// this will eventually cause a network timeout and a reconnect. we just need to wait
+							timing_next_wakeup=ros::Time::now() + ros::Duration(timing_camera);
+							sleep_until(timing_next_wakeup);
+						}
+						// it's now either 2 or -1 but we need to skip the frame, same as case 0 (no break ;)
+					case 0:
+						// no image was received in time. Skip frame, try again
+						resetLoop(getFrameNumber(ros::Time::now()));
+						continue;
+					default:
+						break;
+				}
+				// we are now in stage 2
+
+				// TODO
+				// check if data for stage 1 has been received from other copter
+				// if it was received the subscribers wrote it in the respective objects
+				if (THE LATEST RECEIVED STAGE1 DATA FRAME No# IS THE CURRENT FRAME) {
+					resetLoop(currentFrame);
+					continue;
+				}
+				//SEND_DATA_TO_NETWORK
+				//RECEIVE_DATA_FROM_NETWORK
+				//EXCEPTION HANDLING (reconnect + resetLoop + continue)
+				//PUBLISH DATA TO OTHER COPTER
+
+				timing_next_wakeup = getFrameTime(currentFrame) + ros::Duration(timing_network_stage1 + timing_network_stage2 + timing_communication_stage1 + timing_communication_stage2);
+				sleep_until(timing_next_wakeup);
+
+				// we are now in stage 3
+				// TODO
+				// check if data for stage 2 has been received from other copter
+				// if it was received the subscribers wrote it in the respective objects
+				if (THE LATEST RECEIVED STAGE2 DATA FRAME No# IS THE CURRENT FRAME) {
+					resetLoop(currentFrame);
+					continue;
+				}
+				//SEND_DATA_TO_NETWORK
+				//RECEIVE_DATA_FROM_NETWORK
+				//EXCEPTION HANDLING (reconnect + resetLoop + continue)
+				//PUBLISH DATA TO OTHER COPTER
+
+				resetLoop(currentFrame);
+			}
+
 		}
 
 }

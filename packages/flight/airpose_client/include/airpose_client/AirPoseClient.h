@@ -86,6 +86,17 @@ namespace airpose_client {
 				float aspect_ratio{1.33333};
 				float var_const_x_min{0}, var_const_x_max{0}, var_const_y_min{0}, var_const_y_max{0};
 
+				float timing_camera{0.025};
+				float timing_network_stage1{0.1};
+				float timing_network_stage2{0.05};
+				float timing_network_stage3{0.05};
+				float timing_communication_stage1{0.5};
+				float timing_communication_stage2{0.5};
+				float timing_communication_stage3{0.5};
+				double timing_whole_sequence{999.9};
+				ros::Time timing_next_wakeup{0};
+				volatile int timing_current_stage{-1};
+
 				bool max_update_force{false};
 				std::unique_ptr<ros::Rate> max_update_rate;
 
@@ -104,6 +115,11 @@ namespace airpose_client {
 				void step1Callback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg);
 
 				void step2Callback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg);
+
+				uint64_t getFrameNumber(ros::Time frameTime);
+				ros::Time getFrameTime(uint64_t frameNumber);
+				void sleep_until(ros::Time then);
+				void mainLoop(void);
 		};
 
 }

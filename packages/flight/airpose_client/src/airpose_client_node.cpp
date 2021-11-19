@@ -15,7 +15,10 @@ int main(int argc, char *argv[]) {
 
   airpose_client::AirPoseClient airPoseClient(argv[1], argv[2]);
 
-  ros::spin();
+  ros::AsyncSpinner spinner(1);
+  spinner.start();
+  airPoseClient.mainLoop();
+  ros::waitForShutdown();
 
   return EXIT_SUCCESS;
 }
