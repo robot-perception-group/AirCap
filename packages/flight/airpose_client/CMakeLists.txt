@@ -129,7 +129,7 @@ FIND_PACKAGE(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 CATKIN_PACKAGE(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS include include/airpose_client include/cv
   # LIBRARIES NNClient
   CATKIN_DEPENDS std_msgs
   #  DEPENDS system_lib
@@ -144,6 +144,7 @@ CATKIN_PACKAGE(
 # include_directories(include)
 INCLUDE_DIRECTORIES(
   include
+  include/airpose_client
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}

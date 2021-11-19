@@ -40,6 +40,7 @@
     <!-- Use test_depend for packages you need only for testing: -->
     <!--   <test_depend>gtest</test_depend> -->
     <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>neural_network_detector</build_depend>
     <build_depend>cv_bridge</build_depend>
     <build_depend>image_transport</build_depend>
     <build_depend>roscpp</build_depend>
@@ -47,7 +48,6 @@
     <build_depend>std_msgs</build_depend>
     <build_depend>message_filters</build_depend>
     <build_depend>message_generation</build_depend>
-    <build_depend>neural_network_detector</build_depend>
     <run_depend>neural_network_detector</run_depend>
     <run_depend>cv_bridge</run_depend>
     <run_depend>image_transport</run_depend>

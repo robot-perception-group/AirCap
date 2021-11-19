@@ -1,24 +1,22 @@
-//
-// Created by glawless on 27.04.17.
-//
-
-#include <neural_network_detector/NNDetector.h>
+#include <airpose_client/AirPoseClient.h>
 #include <cv_bridge/cv_bridge.h>
 
-namespace neural_network_detector {
+namespace airpose_client {
 
 #undef DEBUG_ROTATE_IMAGE_90_CW
 
 		static const int color_channels = 3;
 
-		cv::Rect get_crop_area(const NeuralNetworkFeedback &latest_feedback, const cv::Size2i &original_resolution,
+		cv::Rect get_crop_area(const neural_network_detector::NeuralNetworkFeedback &latest_feedback,
+		                       const cv::Size2i &original_resolution,
 		                       const cv::Size2i &desired_resolution, float aspect_ratio, cv::projection2i &proj_crop,
+		                       int &bx, int &by,
 		                       const bool timed_out = false) {
 			// Feedback - zoom level
 			if (timed_out || latest_feedback.ymin > original_resolution.height || latest_feedback.ymax < 0) {
 				// Special case - target is not in view of camera frame - flagged by ymin > max_y or ymax < 0
 				// In this case, we skip the frame
-				return cv::Rect(0,0,0,0);
+				return cv::Rect(0, 0, 0, 0);
 			}
 
 			// Clamp the values to resolution
@@ -36,6 +34,9 @@ namespace neural_network_detector {
 				proj_crop.offset.x = xmin;
 				proj_crop.offset.y = ymin;
 
+				bx = (xmax - xmin) / 2;
+				by = (ymax - ymin) / 2;
+
 				return cv::Rect(xmin, ymin, xmax - xmin, ymax - ymin);
 			}
 				// we have no ground truth, so we need to crop the image to the desired resolution
@@ -52,6 +53,8 @@ namespace neural_network_detector {
 				int16_t half_delta_x = (int16_t) (.5 * delta_x);
 				int16_t xcenter = std::max<int16_t>(half_delta_x, std::min<int16_t>(latest_feedback.xcenter,
 				                                                                    original_resolution.width - half_delta_x));
+				bx = xcenter;
+				by = (ymax - ymin) / 2;
 
 				// Compute xmin and xmax, even though xcenter is clamped let's not take risks
 				int16_t xmin = std::max<int16_t>((int16_t) (xcenter - half_delta_x), 0);
@@ -69,7 +72,7 @@ namespace neural_network_detector {
 			}
 		}
 
-		NNDetector::NNDetector(char *host, char *port) : host_{host}, port_{port} {
+		AirPoseClient::AirPoseClient(char *host, char *port) : host_{host}, port_{port} {
 
 			// Parameters
 			std::string img_topic{"video"};
@@ -84,8 +87,21 @@ namespace neural_network_detector {
 			std::string feedback_topic{"object_detections/feedback"};
 			pnh_.getParam("feedback_topic", feedback_topic);
 
-			pnh_.param<int>("desired_resolution/x", desired_resolution.width, 300);
-			pnh_.param<int>("desired_resolution/y", desired_resolution.height, 300);
+			std::string step1_topic_fb{"step1_feedback"};
+			pnh_.getParam("step1_topic", step1_topic_fb);
+
+			std::string step1_topic_pub{"step1_pub"};
+			pnh_.getParam("step1_topic_pub", step1_topic_pub);
+
+			std::string step2_topic_fb{"step2_feedback"};
+			pnh_.getParam("step2_topic", step2_topic_fb);
+
+			std::string step2_topic_pub{"step2_pub"};
+			pnh_.getParam("step2_topic_pub", step2_topic_pub);
+
+
+			pnh_.param<int>("desired_resolution/x", desired_resolution.width, 224);
+			pnh_.param<int>("desired_resolution/y", desired_resolution.height, 224);
 
 			pnh_.getParam("score_threshold", score_threshold);
 			pnh_.getParam("desired_class", desired_class);
@@ -119,34 +135,50 @@ namespace neural_network_detector {
 
 			// Some pre-allocations
 			length_final_img_ = size_t(desired_resolution.width * desired_resolution.height * color_channels);
-			buffer_final_img_ = std::unique_ptr<uint8_t[]>(new uint8_t[length_final_img_]);
+			first_msg_->buffer_final_img_ = std::unique_ptr<uint8_t[]>(new uint8_t[length_final_img_]);
+
 			buffer_results_ = std::unique_ptr<uint8_t[]>(new uint8_t[length_final_img_]);
 
 			// Publisher of detection messages
-			detection_pub_ = nh_.advertise<NeuralNetworkDetectionArray>(detections_topic, 5);
+			detection_pub_ = nh_.advertise<neural_network_detector::NeuralNetworkDetectionArray>(detections_topic, 5);
+
+			// Publisher of step1 feedback
+			step1_pub_ = nh_.advertise<neural_network_detector::NeuralNetworkDetectionArray>(step1_topic_pub, 5);
+			// Publisher of step2 feedback
+			step2_pub_ = nh_.advertise<neural_network_detector::NeuralNetworkDetectionArray>(step2_topic_pub, 5);
 
 			// Publisher of the amount of detection messages for each frame
-			detection_amount_pub_ = nh_.advertise<NeuralNetworkNumberOfDetections>(detection_amount_topic, 5);
+			detection_amount_pub_ = nh_.advertise<neural_network_detector::NeuralNetworkNumberOfDetections>(
+				detection_amount_topic, 5);
 
 			// Image transport interface
 			image_transport::ImageTransport it(nh_);
 
 			// Debug publisher, will only publish if there is at least 1 subscriber
 			debug_result_pub_ = it.advertise("debug/neural_network/result", 2,
-			                                 boost::bind(&NNDetector::connectCallback, this),
-			                                 boost::bind(&NNDetector::connectCallback, this), NULL, false);
+			                                 boost::bind(&AirPoseClient::connectCallback, this),
+			                                 boost::bind(&AirPoseClient::connectCallback, this), NULL, false);
 
 			latest_feedback_.xcenter = latest_feedback_.ymin = latest_feedback_.ymax = -1;
 			// Feedback subscriber
-			feedback_sub_ = nh_.subscribe(feedback_topic, 1, &NNDetector::feedbackCallback,
+			feedback_sub_ = nh_.subscribe(feedback_topic, 1, &AirPoseClient::feedbackCallback,
 			                              this);  // only need the most recent
 
 			// Img subscriber
-			img_sub_ = it.subscribe(img_topic, 1, &NNDetector::imgCallback,
+			img_sub_ = it.subscribe(img_topic, 1, &AirPoseClient::imgCallback,
 			                        this); // queue of 1, we only want the latest image to be processed
+
+
+			step1_sub_ = nh_.subscribe(step1_topic_fb, 1, &AirPoseClient::step1Callback,
+			                           this); // queue of 1, we only want the latest image to be processed
+
+			step2_sub_ = nh_.subscribe(step2_topic_fb, 1, &AirPoseClient::step2Callback,
+			                           this); // queue of 1, we only want the latest image to be processed
+
+
 		}
 
-		bool NNDetector::connectMultiple(ros::Rate sleeper, int tries) {
+		bool AirPoseClient::connectMultiple(ros::Rate sleeper, int tries) {
 			int try_n = 0;
 			bool res = false;
 			while (++try_n <= tries) {
@@ -173,7 +205,7 @@ namespace neural_network_detector {
 			return true;
 		}
 
-		bool NNDetector::connect() {
+		bool AirPoseClient::connect() {
 			try {
 				c_->connect(host_, port_, boost::posix_time::seconds(3));
 			}
@@ -188,7 +220,7 @@ namespace neural_network_detector {
 			return true;
 		}
 
-		void NNDetector::imgCallback(const sensor_msgs::ImageConstPtr &msgp) {
+		void AirPoseClient::imgCallback(const sensor_msgs::ImageConstPtr &msgp) {
 
 			if (!msgp) {
 				ROS_WARN("Invalid ImageConstPtr received, not handled.");
@@ -215,15 +247,16 @@ namespace neural_network_detector {
 					ROS_INFO_STREAM_THROTTLE(0.5, "Skipping frame " << msgp->header.stamp - latest_feedback_.header.stamp);
 				}
 
+				int bx, by;
 				// Create an auxiliary, custom projection object to aid in calculations
 				cv::projection2i proj_crop(cv::Point2f(1, 1), cv::Point2i(0, 0));
 				const auto crop_area = get_crop_area(latest_feedback_, original_resolution, desired_resolution, aspect_ratio,
-				                                     proj_crop, timed_out);
+				                                     proj_crop, bx, by, timed_out);
 				if (crop_area.width == 0) {
-          ROS_WARN("No crop area found, skipping frame");
+					ROS_WARN("No crop area found, skipping frame");
 					// todo check what to do in this case
-          return;
-        }
+					return;
+				}
 
 				//ROS_INFO_STREAM("crop " << crop_area);
 				cv::Mat cropped = mat_img_(crop_area);
@@ -233,7 +266,7 @@ namespace neural_network_detector {
 				// Resize to desired resolution with interpolation, using our allocated buffer
 
 				const int sizes[2] = {desired_resolution.height, desired_resolution.width}; // this is not a typo, y comes first
-				cv::Mat resized(2, sizes, CV_8UC3, buffer_final_img_.get());
+				cv::Mat resized(2, sizes, CV_8UC3, first_msg_->buffer_final_img_.get());
 
 				// compute values to make it square
 				int fill_x = 0, fill_y = 0;
@@ -247,8 +280,8 @@ namespace neural_network_detector {
 				cv::Mat squared_cropped;
 				cv::resize(cropped, squared_cropped, cv::Size(int(scale * cropped.cols), int(scale * cropped.rows)));
 
-				fill_x = (desired_resolution.width - squared_cropped.cols) / 2;
-				fill_y = (desired_resolution.height - squared_cropped.rows) / 2;
+				fill_x = int((desired_resolution.width - squared_cropped.cols) / 2);
+				fill_y = int((desired_resolution.height - squared_cropped.rows) / 2);
 				cv::copyMakeBorder(squared_cropped, resized, fill_x, desired_resolution.width - squared_cropped.cols - fill_x,
 				                   fill_y, desired_resolution.height - squared_cropped.rows - fill_y,
 				                   cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
@@ -261,8 +294,13 @@ namespace neural_network_detector {
 					            desired_resolution.height / (float) (cropped.rows)),
 					cv::Point2i(0, 0));
 
+				first_msg_->bx = (mat_img_.cols / 2.0 - bx) / (mat_img_.cols / 2.0);
+				first_msg_->by = (mat_img_.rows / 2.0 - by) / (mat_img_.rows / 2.0);
+				first_msg_->scale = scale;
+				first_msg_->state = 1;
+
 				//ROS_INFO("Sending to NN");
-				c_->write_bytes(buffer_final_img_.get(), length_final_img_, boost::posix_time::seconds(10));
+				c_->write_bytes((uint8_t *) &first_msg_, sizeof(first_msg_), boost::posix_time::seconds(10));
 
 				// Block while waiting for reply
 				// reusing image buffer:
@@ -290,7 +328,7 @@ namespace neural_network_detector {
 				//ROS_INFO("Received %i detections",results->count);
 
 				// Array to be published
-				NeuralNetworkDetectionArray detection_array_msg;
+				neural_network_detector::NeuralNetworkDetectionArray detection_array_msg;
 
 				// Header is the same as img msg
 				detection_array_msg.header.frame_id = msgp->header.frame_id;
@@ -313,7 +351,7 @@ namespace neural_network_detector {
 
 					// Create and send one message for each detection above the score threshold
 					// It is the job of the tracker to filter outliers
-					NeuralNetworkDetection detection_msg_;
+					neural_network_detector::NeuralNetworkDetection detection_msg_;
 					detection_msg_.header.frame_id = msgp->header.frame_id;
 					detection_msg_.header.stamp = msgp->header.stamp;
 					detection_msg_.detection_score = det.score;
@@ -371,7 +409,7 @@ namespace neural_network_detector {
 					detection_pub_.publish(detection_array_msg);
 
 				// Publish the amount of detections
-				NeuralNetworkNumberOfDetections amount_msg;
+				neural_network_detector::NeuralNetworkNumberOfDetections amount_msg;
 				amount_msg.header.frame_id = msgp->header.frame_id;
 				amount_msg.header.stamp = msgp->header.stamp;
 				amount_msg.data = (uint16_t) detection_array_msg.detections.size();
@@ -423,15 +461,21 @@ namespace neural_network_detector {
 
 		}
 
-		void NNDetector::connectCallback() {
+		void AirPoseClient::connectCallback() {
 			if (debug_result_pub_.getNumSubscribers() > 0)
 				ROS_INFO("At least one client is connected to debug topic");
 			else
 				ROS_INFO("Clients disconnected from debug topic - stopping debug");
 		}
 
-		void NNDetector::feedbackCallback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg) {
+		void AirPoseClient::feedbackCallback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg) {
 			latest_feedback_ = *msg;
+		}
+
+		void AirPoseClient::step1Callback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg) {
+		}
+
+		void AirPoseClient::step2Callback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg) {
 		}
 
 }
