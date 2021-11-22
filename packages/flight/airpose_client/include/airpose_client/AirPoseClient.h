@@ -3,49 +3,28 @@
 
 #include <ros/ros.h>
 #include <boost/thread.hpp>
-#include <neural_network_detector/BoostTCPClient.h>
+#include <airpose_client/BoostTCPClient.h>
 #include <sensor_msgs/Image.h>
 #include <opencv2/core/core.hpp>
 #include <image_transport/image_transport.h>
-#include <neural_network_detector/NeuralNetworkDetection.h>
-#include <neural_network_detector/NeuralNetworkDetectionArray.h>
 #include <neural_network_detector/NeuralNetworkFeedback.h>
-#include <neural_network_detector/NeuralNetworkNumberOfDetections.h>
+#include <airpose_client/AirposeNetworkData.h>
 #include <cv/extensions/projection.h>
 
 namespace airpose_client {
 
 		typedef struct __attribute__ ((__packed__)) {
-				uint8_t label;
-				float score;
-				int16_t xmin;
-				int16_t xmax;
-				int16_t ymin;
-				int16_t ymax;
-		} detection_info;
-
-		typedef struct __attribute__ ((__packed__)) {
-				int state;
-				std::unique_ptr<uint8_t[]> buffer_final_img_;
+				uint8_t state;
 				float bx;
 				float by;
 				float scale;
+				//uint8_t buffer_final_img_[X*X*3]; -- not included - auto 
 		} first_message;
 
 		typedef struct __attribute__ ((__packed__)) {
-				int state;
-				std::unique_ptr<float[]> data;
-		} second_message;
-
-		typedef struct __attribute__ ((__packed__)) {
-				int state;
-				std::unique_ptr<float[]> data;
-		} third_message;
-
-		typedef struct __attribute__ ((__packed__)) {
-				uint16_t count;
-				detection_info detection[INT_MAX]; // over_allocated since variable length arrays are not allowed in C++
-		} detection_results;
+				uint8_t state;
+				float data[136]; // explicitly included since fixed size
+		} second_and_third_message;
 
 		cv::Rect get_crop_area(const neural_network_detector::NeuralNetworkFeedback &latest_feedback,
 		                       const cv::Size2i &original_resolution, const cv::Size2i &desired_resolution,
@@ -53,9 +32,11 @@ namespace airpose_client {
 
 		class AirPoseClient {
 		private:
-				std::unique_ptr<first_message> first_msg_;
+				/*std::unique_ptr<first_message> first_msg_;
 				std::unique_ptr<second_message> second_msg_;
-				std::unique_ptr<third_message> third_msg_;
+				std::unique_ptr<third_message> third_msg_;*/
+				airpose_client::AirposeNetworkData first_msg_;
+				airpose_client::AirposeNetworkData second_msg_;
 
 				std::unique_ptr<BoostTCPClient> c_{
 					new BoostTCPClient}; // will call destructor when out of scope, closing connection smoothly
@@ -64,13 +45,12 @@ namespace airpose_client {
 				cv::Mat mat_img_;
 				std::string host_, port_;
 				size_t length_final_img_;
-				std::unique_ptr<uint8_t[]> buffer_results_; // will automatically delete when out of scope
-				ros::Publisher detection_pub_, step1_pub_, step2_pub_;
-				image_transport::Publisher debug_result_pub_;
+				std::unique_ptr<uint8_t[]> buffer_send_; // will automatically delete when out of scope
+				std::unique_ptr<second_and_third_message> buffer_send_msg; // will automatically delete when out of scope
+				ros::Publisher step1_pub_, step2_pub_, step3_pub_;
 				ros::Subscriber feedback_sub_, step1_sub_, step2_sub_;
 				neural_network_detector::NeuralNetworkFeedback latest_feedback_;
 				ros::Duration timeout_;
-				ros::Publisher detection_amount_pub_;
 				double border_dropoff_{.05};
 
 				// Connect to TCP server (NN)
@@ -95,6 +75,7 @@ namespace airpose_client {
 				float timing_communication_stage3{0.5};
 				double timing_whole_sequence{999.9};
 				ros::Time timing_next_wakeup{0};
+				ros::Time timing_current_frame_time;
 				volatile int timing_current_stage{-1};
 
 				bool max_update_force{false};
@@ -112,12 +93,13 @@ namespace airpose_client {
 				// Feedback callback for updating latest feedback info
 				void feedbackCallback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg);
 
-				void step1Callback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg);
+				void step1Callback(const airpose_client::AirposeNetworkDataConstPtr &msg);
 
-				void step2Callback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg);
+				void step2Callback(const airpose_client::AirposeNetworkDataConstPtr &msg);
 
 				uint64_t getFrameNumber(ros::Time frameTime);
 				ros::Time getFrameTime(uint64_t frameNumber);
+				void resetLoop(uint64_t FrameNumber);
 				void sleep_until(ros::Time then);
 				void mainLoop(void);
 		};

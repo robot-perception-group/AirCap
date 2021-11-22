@@ -98,7 +98,9 @@ namespace airpose_client {
 
 			std::string step2_topic_pub{"step2_pub"};
 			pnh_.getParam("step2_topic_pub", step2_topic_pub);
-
+			
+			std::string step3_topic_pub{"step3_pub"};
+			pnh_.getParam("step3_topic_pub", step3_topic_pub);
 
 			pnh_.param<int>("desired_resolution/x", desired_resolution.width, 224);
 			pnh_.param<int>("desired_resolution/y", desired_resolution.height, 224);
@@ -111,13 +113,13 @@ namespace airpose_client {
 			pnh_.getParam("timeout_seconds", timeout_sec);
 			timeout_ = ros::Duration(timeout_sec);
 
-			pnh_getParam("timing/camera", timing_camera);
-			pnh_getParam("timing/network_stage1", timing_network_stage1);
-			pnh_getParam("timing/network_stage2", timing_network_stage2);
-			pnh_getParam("timing/network_stage3", timing_network_stage3);
-			pnh_getParam("timing/communication_stage1", timing_communication_stage1);
-			pnh_getParam("timing/communication_stage2", timing_communication_stage2);
-			pnh_getParam("timing/communication_stage3", timing_communication_stage3);
+			pnh_.getParam("timing/camera", timing_camera);
+			pnh_.getParam("timing/network_stage1", timing_network_stage1);
+			pnh_.getParam("timing/network_stage2", timing_network_stage2);
+			pnh_.getParam("timing/network_stage3", timing_network_stage3);
+			pnh_.getParam("timing/communication_stage1", timing_communication_stage1);
+			pnh_.getParam("timing/communication_stage2", timing_communication_stage2);
+			pnh_.getParam("timing/communication_stage3", timing_communication_stage3);
 			timing_whole_sequence = timing_network_stage1 + timing_network_stage2 + timing_network_stage3 + timing_communication_stage1 + timing_communication_stage2 + timing_camera;
 
 			pnh_.getParam("border_dropoff", border_dropoff_);
@@ -144,29 +146,19 @@ namespace airpose_client {
 
 			// Some pre-allocations
 			length_final_img_ = size_t(desired_resolution.width * desired_resolution.height * color_channels);
-			first_msg_->buffer_final_img_ = std::unique_ptr<uint8_t[]>(new uint8_t[length_final_img_]);
 
-			buffer_results_ = std::unique_ptr<uint8_t[]>(new uint8_t[length_final_img_]);
-
-			// Publisher of detection messages
-			detection_pub_ = nh_.advertise<neural_network_detector::NeuralNetworkDetectionArray>(detections_topic, 5);
+			buffer_send_ = std::unique_ptr<uint8_t[]>(new uint8_t[length_final_img_+sizeof(first_message)]);
+			buffer_send_msg = std::unique_ptr<second_and_third_message>(new second_and_third_message);
 
 			// Publisher of step1 feedback
-			step1_pub_ = nh_.advertise<neural_network_detector::NeuralNetworkDetectionArray>(step1_topic_pub, 5);
+			step1_pub_ = nh_.advertise<airpose_client::AirposeNetworkData>(step1_topic_pub, 5);
 			// Publisher of step2 feedback
-			step2_pub_ = nh_.advertise<neural_network_detector::NeuralNetworkDetectionArray>(step2_topic_pub, 5);
-
-			// Publisher of the amount of detection messages for each frame
-			detection_amount_pub_ = nh_.advertise<neural_network_detector::NeuralNetworkNumberOfDetections>(
-				detection_amount_topic, 5);
+			step2_pub_ = nh_.advertise<airpose_client::AirposeNetworkData>(step2_topic_pub, 5);
+			// Publisher of step3 feedback (the actual result)
+			step3_pub_ = nh_.advertise<airpose_client::AirposeNetworkData>(step3_topic_pub, 5);
 
 			// Image transport interface
 			image_transport::ImageTransport it(nh_);
-
-			// Debug publisher, will only publish if there is at least 1 subscriber
-			debug_result_pub_ = it.advertise("debug/neural_network/result", 2,
-			                                 boost::bind(&AirPoseClient::connectCallback, this),
-			                                 boost::bind(&AirPoseClient::connectCallback, this), NULL, false);
 
 			latest_feedback_.xcenter = latest_feedback_.ymin = latest_feedback_.ymax = -1;
 			// Feedback subscriber
@@ -242,7 +234,6 @@ namespace airpose_client {
 			if (timing_current_stage!=0) {
 				return;
 			}
-			timing_current_stage=1;
 
 			//ROS_INFO("Callback called for image seq %d", msgp->header.seq);
 
@@ -275,15 +266,23 @@ namespace airpose_client {
 					return;
 				}
 
+				// we accepted a frame, advancing stage
+				timing_current_stage = 1;
+				timing_current_frame_time = msgp->header.stamp;
+
+
 				//ROS_INFO_STREAM("crop " << crop_area);
 				cv::Mat cropped = mat_img_(crop_area);
 				//ROS_INFO("Center %d,%d\tCrop %d\tOriginal res %d,%d", center.x, center.y, crop_length, original_resolution.width, original_resolution.height);
 
 				//ROS_INFO("Parsing image...Resize");
 				// Resize to desired resolution with interpolation, using our allocated buffer
+				
+				// convenient pointers to create the to-be-sent data - yes, these are ugly raw pointers but only with local scope
+				first_message *send_data = (first_message *) (buffer_send_.get());
 
 				const int sizes[2] = {desired_resolution.height, desired_resolution.width}; // this is not a typo, y comes first
-				cv::Mat resized(2, sizes, CV_8UC3, first_msg_->buffer_final_img_.get());
+				cv::Mat resized(2, sizes, CV_8UC3, buffer_send_.get()+sizeof(first_message));
 
 				// compute values to make it square
 				int fill_x = 0, fill_y = 0;
@@ -311,162 +310,32 @@ namespace airpose_client {
 					            desired_resolution.height / (float) (cropped.rows)),
 					cv::Point2i(0, 0));
 
-				first_msg_->bx = (mat_img_.cols / 2.0 - bx) / (mat_img_.cols / 2.0);
-				first_msg_->by = (mat_img_.rows / 2.0 - by) / (mat_img_.rows / 2.0);
-				first_msg_->scale = scale;
-				first_msg_->state = 1;
+				send_data->bx = (mat_img_.cols / 2.0 - bx) / (mat_img_.cols / 2.0);
+				send_data->by = (mat_img_.rows / 2.0 - by) / (mat_img_.rows / 2.0);
+				send_data->scale = scale;
+				send_data->state = 1;
 
 				//ROS_INFO("Sending to NN");
-				c_->write_bytes((uint8_t *) &first_msg_, sizeof(first_msg_), boost::posix_time::seconds(10));
+				c_->write_bytes(buffer_send_.get(), sizeof(first_message)+length_final_img_, boost::posix_time::seconds(10));
 
-				
-
+				// Array to be published
+				airpose_client::AirposeNetworkData network_data_msg;
+				// Header is the same as img msg
+				network_data_msg.header.frame_id = msgp->header.frame_id;
+				network_data_msg.header.stamp = msgp->header.stamp;
 
 				// Block while waiting for reply
-				// reusing image buffer:
-				detection_results *results = (detection_results *) buffer_results_.get();
 				//ROS_INFO("Receiving answer...");
 			
+				// Read the count from the buffer
+				c_->read_bytes((uint8_t *) &network_data_msg.data[0], sizeof(network_data_msg.data), boost::posix_time::seconds(
+					10)); // 2 seconds are not enough here, initialization on first conect might take longer
+
 				// IMPORTANT - the network finished executing - advancing sequencer
 				timing_current_stage=2;
 
-				// Read the count from the buffer
-				c_->read_bytes((uint8_t *) &results->count, sizeof(detection_results::count), boost::posix_time::seconds(
-					10)); // 2 seconds are not enough here, initialization on first conect might take longer
+				step1_pub_.publish(network_data_msg);
 
-				// Check if number of results does not overflow the allocated buffer
-				if (offsetof(detection_results, detection[0]) + (results->count * sizeof(results->detection[0])) <
-				    length_final_img_) {
-
-					// Read the results
-					c_->read_bytes((uint8_t *) &results->detection[0], results->count * sizeof(results->detection[0]),
-					               boost::posix_time::seconds(2));
-				} else {
-					// this would be a buffer overflow, no go
-					ROS_WARN("ALERT! Detection result exceeds buffer!\n");
-					return;
-				}
-
-				// Process the received information
-				//ROS_INFO("Received %i detections",results->count);
-
-				// Array to be published
-				neural_network_detector::NeuralNetworkDetectionArray detection_array_msg;
-
-				// Header is the same as img msg
-				detection_array_msg.header.frame_id = msgp->header.frame_id;
-				detection_array_msg.header.stamp = msgp->header.stamp;
-
-				for (int det_number = 0; det_number < results->count; ++det_number) {
-
-					// Skip if below threshold
-					if (results->detection[det_number].score < score_threshold ||
-					    results->detection[det_number].label != desired_class)
-						continue;
-
-					detection_info det = results->detection[det_number];
-					if (det.xmin == det.xmax) {
-						det.xmax++;
-					}
-					if (det.ymin == det.ymax) {
-						det.ymax++;
-					}
-
-					// Create and send one message for each detection above the score threshold
-					// It is the job of the tracker to filter outliers
-					neural_network_detector::NeuralNetworkDetection detection_msg_;
-					detection_msg_.header.frame_id = msgp->header.frame_id;
-					detection_msg_.header.stamp = msgp->header.stamp;
-					detection_msg_.detection_score = det.score;
-					detection_msg_.object_class = det.label;
-
-					// Remap the bounding box corners from the desired resolution range to the original resolution range with the cropping offset
-					cv::Point2i detection_min(proj_crop << (proj_scale << cv::Point2i(det.xmin, det.ymin)));
-					detection_msg_.xmin = (int16_t) detection_min.x;
-					detection_msg_.ymin = (int16_t) detection_min.y;
-
-					cv::Point2i detection_max(proj_crop << (proj_scale << cv::Point2i(det.xmax, det.ymax)));
-					detection_msg_.xmax = (int16_t) detection_max.x;
-					detection_msg_.ymax = (int16_t) detection_max.y;
-
-					// For the variances, we take the constant variance model, and multiply by the squared pixel count of the cropped area
-					detection_msg_.variance_xmin = var_const_x_min * crop_area.width * crop_area.width;
-					detection_msg_.variance_xmax = var_const_x_max * crop_area.width * crop_area.width;
-					detection_msg_.variance_ymin = var_const_y_min * crop_area.height * crop_area.height;
-					detection_msg_.variance_ymax = var_const_y_max * crop_area.height * crop_area.height;
-
-					if (det.xmin < (border_dropoff_ * desired_resolution.width))
-						detection_msg_.variance_xmin = (crop_area.width * crop_area.width / 4);
-					if (det.xmax > ((1.0 - border_dropoff_) * desired_resolution.width))
-						detection_msg_.variance_xmax = (crop_area.width * crop_area.width / 4);
-					if (det.ymin < (border_dropoff_ * desired_resolution.height))
-						detection_msg_.variance_ymin = (crop_area.height * crop_area.height / 4);
-					if (det.ymax > ((1.0 - border_dropoff_) * desired_resolution.height))
-						detection_msg_.variance_ymax = (crop_area.height * crop_area.height / 4);
-
-					// Push back to the array
-					detection_array_msg.detections.push_back(detection_msg_);
-
-/*      ROS_INFO_STREAM(std::endl << "det msg min" << det.xmin << " " << det.ymin <<
-                      std::endl << "det msg max" << det.xmax << " " << det.ymax << std::endl <<
-                      std::endl << "det min : " << detection_min << std::endl << "det max" << detection_max << std::endl);*/
-
-					if (debug_result_pub_.getNumSubscribers() > 0) {
-
-						detection_min.x = std::max<int16_t>(detection_min.x, 0);
-						detection_min.y = std::max<int16_t>(detection_min.y, 0);
-						detection_max.x = std::min<int16_t>(detection_max.x, original_resolution.width);
-						detection_max.y = std::min<int16_t>(detection_max.y, original_resolution.height);
-
-						// Rectangle on the original image - detection in red
-						cv::rectangle(mat_img_, detection_min, detection_max, cv::Scalar(50, 50, 255), 3);
-					}
-				}
-
-				// If max update rate is set, sleep for the rest of the time
-				if (max_update_force)
-					max_update_rate->sleep();
-
-				// Publish the array msg if not empty
-				if (!detection_array_msg.detections.empty())
-					detection_pub_.publish(detection_array_msg);
-
-				// Publish the amount of detections
-				neural_network_detector::NeuralNetworkNumberOfDetections amount_msg;
-				amount_msg.header.frame_id = msgp->header.frame_id;
-				amount_msg.header.stamp = msgp->header.stamp;
-				amount_msg.data = (uint16_t) detection_array_msg.detections.size();
-				detection_amount_pub_.publish(amount_msg);
-
-				// Publish debug image if any subscriber
-				if (debug_result_pub_.getNumSubscribers() > 0) {
-					// Rectangle on the original image - zoom level in green
-					cv::rectangle(mat_img_, crop_area, cv::Scalar(50, 255, 50), 5);
-
-					if (latest_feedback_.xcenter > 0 && latest_feedback_.xcenter < original_resolution.width
-					    && latest_feedback_.debug_included
-					    && latest_feedback_.ycenter > 0 && latest_feedback_.ycenter < original_resolution.height) {
-
-						// Lines for the raw coordinates, without uncertainty, for debugging
-						cv::line(mat_img_, cv::Point2i(crop_area.x, latest_feedback_.head_raw),
-						         cv::Point2i(crop_area.x + crop_area.width, latest_feedback_.head_raw), cv::Scalar(0, 128, 255), 5);
-						cv::line(mat_img_, cv::Point2i(crop_area.x, latest_feedback_.feet_raw),
-						         cv::Point2i(crop_area.x + crop_area.width, latest_feedback_.feet_raw), cv::Scalar(0, 128, 255), 5);
-
-						// Lines crossing the center that cover the whole image
-						cv::line(mat_img_, cv::Point2i(latest_feedback_.xcenter, 0),
-						         cv::Point2i(latest_feedback_.xcenter, original_resolution.height), cv::Scalar(255, 100, 100), 8);
-						cv::line(mat_img_, cv::Point2i(0, latest_feedback_.ycenter),
-						         cv::Point2i(original_resolution.width, latest_feedback_.ycenter), cv::Scalar(255, 100, 100), 8);
-					}
-
-
-					ROS_WARN_THROTTLE(5, "Debug information on topic %s is active due to having at least 1 subscriber",
-					                  debug_result_pub_.getTopic().c_str());
-					cv::Mat small_img;
-					cv::resize(mat_img_, small_img, cv::Size(mat_img_.cols / 4, mat_img_.rows / 4));
-					debug_result_pub_.publish(cv_bridge::CvImage(msgp->header, "bgr8", small_img).toImageMsg());
-				}
 			}
 			catch (std::exception &e) {
 				ROS_WARN("Exception: %s", e.what());
@@ -485,20 +354,22 @@ namespace airpose_client {
 		}
 
 		void AirPoseClient::connectCallback() {
-			if (debug_result_pub_.getNumSubscribers() > 0)
+			/*if (debug_result_pub_.getNumSubscribers() > 0)
 				ROS_INFO("At least one client is connected to debug topic");
 			else
-				ROS_INFO("Clients disconnected from debug topic - stopping debug");
+				ROS_INFO("Clients disconnected from debug topic - stopping debug");*/
 		}
 
 		void AirPoseClient::feedbackCallback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg) {
 			latest_feedback_ = *msg;
 		}
 
-		void AirPoseClient::step1Callback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg) {
+		void AirPoseClient::step1Callback(const airpose_client::AirposeNetworkDataConstPtr &msg) {
+			first_msg_ = *msg;
 		}
 
-		void AirPoseClient::step2Callback(const neural_network_detector::NeuralNetworkFeedbackConstPtr &msg) {
+		void AirPoseClient::step2Callback(const airpose_client::AirposeNetworkDataConstPtr &msg) {
+			second_msg_ = *msg;
 		}
 
 		uint64_t AirPoseClient::getFrameNumber(ros::Time frameTime) {
@@ -509,9 +380,9 @@ namespace airpose_client {
 			return ros::Time(((double)(frameNumber)) * ((double)(timing_whole_sequence)));
 		}
 
-		void sleep_until(ros::Time then) {
-			ros::Duration d(then-ros::Time::now())
-			if (d>0.0) {
+		void AirPoseClient::sleep_until(ros::Time then) {
+			ros::Duration d(then-ros::Time::now());
+			if (d>ros::Duration(0.0)) {
 				d.sleep();
 			}
 		}
@@ -537,6 +408,9 @@ namespace airpose_client {
 				timing_next_wakeup = getFrameTime(currentFrame) + ros::Duration(timing_camera + timing_network_stage1 + timing_communication_stage1);
 				sleep_until(timing_next_wakeup);
 				switch (timing_current_stage) {
+					case 2:
+						// we should be in stage 2 now
+						break;
 					case 1:
 						// image was received but neural network never sent a result back
 						while (timing_current_stage==1) {
@@ -545,42 +419,89 @@ namespace airpose_client {
 							sleep_until(timing_next_wakeup);
 						}
 						// it's now either 2 or -1 but we need to skip the frame, same as case 0 (no break ;)
-					case 0:
+					default:
 						// no image was received in time. Skip frame, try again
 						resetLoop(getFrameNumber(ros::Time::now()));
 						continue;
-					default:
-						break;
 				}
 				// we are now in stage 2
 
-				// TODO
 				// check if data for stage 1 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
-				if (THE LATEST RECEIVED STAGE1 DATA FRAME No# IS THE CURRENT FRAME) {
+				if (getFrameNumber(first_msg_.header.stamp)!=currentFrame) {
 					resetLoop(currentFrame);
 					continue;
 				}
-				//SEND_DATA_TO_NETWORK
-				//RECEIVE_DATA_FROM_NETWORK
-				//EXCEPTION HANDLING (reconnect + resetLoop + continue)
-				//PUBLISH DATA TO OTHER COPTER
+				try {
+					buffer_send_msg->state=2;
+					std::memcpy(&buffer_send_msg->data[0],&first_msg_.data[0],sizeof(buffer_send_msg->data));
+					c_->write_bytes((uint8_t*)buffer_send_msg.get(), sizeof(second_and_third_message), boost::posix_time::seconds(1));
+
+					airpose_client::AirposeNetworkData network_data_msg;
+					network_data_msg.header.frame_id = first_msg_.header.frame_id;
+					network_data_msg.header.stamp = timing_current_frame_time;
+
+					c_->read_bytes((uint8_t *) &network_data_msg.data[0], sizeof(network_data_msg.data), boost::posix_time::seconds(
+						1));
+					//PUBLISH DATA TO OTHER COPTER
+					step2_pub_.publish(network_data_msg);
+					timing_current_stage=3;
+				}
+				catch (std::exception &e) {
+					ROS_WARN("Exception: %s", e.what());
+					ROS_INFO("Creating new TCP client");
+
+					// Delete old client and create new one
+					c_.reset(new BoostTCPClient);
+
+					// Try to reconnect to server
+					if (!this->connectMultiple(ros::Rate(0.2), 100)) {
+						ros::shutdown();
+						return;
+					}
+					resetLoop(getFrameNumber(ros::Time::now()));
+					continue;
+				}
+
 
 				timing_next_wakeup = getFrameTime(currentFrame) + ros::Duration(timing_camera + timing_network_stage1 + timing_network_stage2 + timing_communication_stage1 + timing_communication_stage2);
 				sleep_until(timing_next_wakeup);
 
 				// we are now in stage 3
-				// TODO
 				// check if data for stage 2 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
-				if (THE LATEST RECEIVED STAGE2 DATA FRAME No# IS THE CURRENT FRAME) {
+				if (getFrameNumber(second_msg_.header.stamp)!=currentFrame) {
 					resetLoop(currentFrame);
 					continue;
 				}
-				//SEND_DATA_TO_NETWORK
-				//RECEIVE_DATA_FROM_NETWORK
-				//EXCEPTION HANDLING (reconnect + resetLoop + continue)
-				//PUBLISH DATA TO OTHER COPTER
+				try {
+					buffer_send_msg->state=3;
+					std::memcpy(&buffer_send_msg->data[0],&second_msg_.data[0],sizeof(buffer_send_msg->data));
+					c_->write_bytes((uint8_t*)buffer_send_msg.get(), sizeof(second_and_third_message), boost::posix_time::seconds(1));
+
+					airpose_client::AirposeNetworkData network_data_msg;
+					network_data_msg.header.frame_id = second_msg_.header.frame_id;
+					network_data_msg.header.stamp = timing_current_frame_time;
+
+					c_->read_bytes((uint8_t *) &network_data_msg.data[0], sizeof(network_data_msg.data), boost::posix_time::seconds(
+						1));
+					//PUBLISH DATA TO THE WORLD
+					step3_pub_.publish(network_data_msg);
+				}
+				catch (std::exception &e) {
+					ROS_WARN("Exception: %s", e.what());
+					ROS_INFO("Creating new TCP client");
+
+					// Delete old client and create new one
+					c_.reset(new BoostTCPClient);
+
+					// Try to reconnect to server
+					if (!this->connectMultiple(ros::Rate(0.2), 100)) {
+						ros::shutdown();
+						return;
+					}
+					continue;
+				}
 
 				resetLoop(currentFrame);
 			}

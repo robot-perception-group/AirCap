@@ -97,6 +97,21 @@ FIND_PACKAGE(catkin REQUIRED COMPONENTS
 #   Action2.action
 # )
 
+## Generate messages in the 'msg' folder
+ADD_MESSAGE_FILES(
+   DIRECTORY msg
+   FILES AirposeNetworkData.msg
+)
+
+## Generate added messages and services with any dependencies listed here
+GENERATE_MESSAGES(
+   DEPENDENCIES
+   std_msgs
+   airpose_client
+)
+
+
+
 ## Generate added messages and services with any dependencies listed here
 
 ################################################
@@ -129,9 +144,9 @@ FIND_PACKAGE(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 CATKIN_PACKAGE(
-  INCLUDE_DIRS include include/airpose_client include/cv
+  INCLUDE_DIRS include
   # LIBRARIES NNClient
-  CATKIN_DEPENDS std_msgs
+  CATKIN_DEPENDS message_runtime std_msgs
   #  DEPENDS system_lib
 )
 
@@ -144,7 +159,6 @@ CATKIN_PACKAGE(
 # include_directories(include)
 INCLUDE_DIRECTORIES(
   include
-  include/airpose_client
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
@@ -165,6 +179,7 @@ INCLUDE_DIRECTORIES(
 ADD_EXECUTABLE(${PROJECT_NAME}_node
         src/AirPoseClient.cpp
         include/airpose_client/AirPoseClient.h
+	include/airpose_client/BoostTCPClient.h
         include/cv/extensions/projection.h
         src/airpose_client_node.cpp)
 
