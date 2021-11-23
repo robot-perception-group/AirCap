@@ -50,6 +50,12 @@ namespace airpose_client {
 				ros::Publisher step1_pub_, step2_pub_, step3_pub_;
 				ros::Subscriber feedback_sub_, step1_sub_, step2_sub_, camera_info_sub_;
 				neural_network_detector::NeuralNetworkFeedback latest_feedback_;
+
+				cv::Mat airpose_camera_matrix_;
+				cv::Mat map1, map2, map1_inverse, map2_inverse;
+
+				void reproject_image(const cv::Mat& image, int& ymin, int& ymax, int& xmin, int& xmax);
+
 				ros::Duration timeout_;
 				double border_dropoff_{.05};
 
