@@ -7,7 +7,7 @@
     <arg name="host" default="localhost"/>
     <arg name="port" default="9900"/>
 
-    <arg name="img_topic" default="video"/>
+    <arg name="img_topic" default="video"/> <!-- camera/image_raw -->
     <arg name="detections_topic" default="object_detections"/>
 
     <arg name="timeout_seconds" default="1"/>
@@ -16,13 +16,13 @@
 
     <arg name="max_update_force" default="false"/>
     <arg name="max_update_rate" default="1.0"/>
-    <arg name="network_model" default="ssd_300.yaml"/>
+    <arg name="network_model" default="airpose.yaml"/>
 
     <group ns="$(arg namespace)">
-        <arg name="name" value="neural_network_detector"/>
-        <node name="$(arg name)" pkg="neural_network_detector" type="neural_network_detector_node" output="screen"
+        <arg name="name" value="airpose_client"/>
+        <node name="$(arg name)" pkg="airpose_client" type="airpose_client_node" output="screen"
               args="$(arg host) $(arg port)">
-            <rosparam command="load" file="$(find neural_network_detector)/config/$(arg network_model)"/>
+            <rosparam command="load" file="$(find airpose_client)/config/$(arg network_model)"/>
             <param name="img_topic" value="$(arg img_topic)" type="string"/>
             <param name="detections_topic" value="$(arg detections_topic)" type="string"/>
             <param name="feedback_topic" value="$(arg feedback_topic)" type="string"/>

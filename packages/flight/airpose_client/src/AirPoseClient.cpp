@@ -7,21 +7,21 @@ namespace airpose_client {
 
 		static const int color_channels = 3;
 
-		void AirPoseClient::reproject_image(const cv::Mat& image, int& ymin, int& ymax, int& xmin, int& xmax){
+		void AirPoseClient::reproject_image(const cv::Mat &image, int &ymin, int &ymax, int &xmin, int &xmax) {
 			if (map1.empty() || map2.empty()) {
 				// first cv::Mat is the D coeffs, second is R (should be left empty)
 				cv::initUndistortRectifyMap(camera_matrix_, cv::Mat(), cv::Mat(),
 				                            airpose_camera_matrix_, image.size(), CV_16SC2, map1, map2);
 				cv::initUndistortRectifyMap(airpose_camera_matrix_, cv::Mat(), cv::Mat(),
 				                            camera_matrix_, image.size(), CV_16SC2, map1_inverse, map2_inverse);
-      }
+			}
 
 			cv::remap(image, image, map1, map2, cv::INTER_LINEAR);
 			// todo debug this -- order y/x 0,1
 			// in python seemed correct
 			ymin = map1_inverse.at<cv::Vec2s>(ymin, xmin)[1];
 			xmin = map1_inverse.at<cv::Vec2s>(ymin, xmin)[0];
-			if (ymax != -1){
+			if (ymax != -1) {
 				ymax = map1_inverse.at<cv::Vec2s>(ymax, xmax)[1];
 				xmax = map1_inverse.at<cv::Vec2s>(ymax, xmax)[0];
 			}
@@ -57,6 +57,7 @@ namespace airpose_client {
 
 				bx = (xmax + xmin) / 2;
 				by = (ymax + ymin) / 2;
+				ROS_INFO_STREAM("xmin: " << xmin << " xmax: " << xmax << " ymin: " << ymin << " ymax: " << ymax);
 
 				return cv::Rect(xmin, ymin, xmax - xmin, ymax - ymin);
 			}
@@ -79,7 +80,7 @@ namespace airpose_client {
 
 				// Compute xmin and xmax, even though xcenter is clamped let's not take risks
 				int16_t xmin = std::max<int16_t>((int16_t) (xcenter - half_delta_x), 0);
-				//int16_t xmax = std::min<int16_t>((int16_t)(xcenter + half_delta_x), original_resolution.width);
+				int16_t xmax = std::min<int16_t>((int16_t) (xcenter + half_delta_x), original_resolution.width);
 
 				// One final check, we might need to take away 1 pixel due to rounding
 				delta_x = std::min<int16_t>(delta_x, original_resolution.width - xmin);
@@ -101,7 +102,7 @@ namespace airpose_client {
 			std::string step1_topic_fb{"step1_feedback"};
 			pnh_.getParam("step1_topic", step1_topic_fb);
 
-			std::string camera_info_topic{"camera_info"};
+			std::string camera_info_topic{"camera/info"};
 			pnh_.getParam("camera_info_topic", camera_info_topic);
 
 			std::string step1_topic_pub{"step1_pub"};
@@ -274,7 +275,10 @@ namespace airpose_client {
 				if (msgp->header.stamp - latest_feedback_.header.stamp > timeout_) {
 					timed_out = true;
 					ROS_INFO_STREAM_THROTTLE(0.5, "Skipping frame " << msgp->header.stamp - latest_feedback_.header.stamp);
+					ROS_INFO_STREAM("Timeout " << timeout_ << " msgp " << msgp->header.stamp << " latest_feedback "
+					                           << latest_feedback_.header.stamp);
 				}
+				ROS_INFO_STREAM("Latest feedback id " << latest_feedback_.header.seq << " timed out " << timed_out);
 
 				int bx, by;
 				// Create an auxiliary, custom projection object to aid in calculations
@@ -313,33 +317,33 @@ namespace airpose_client {
 					scale = desired_resolution.width / (float) cropped.cols;
 				}
 
-				cv::Mat squared_cropped;
-				cv::resize(cropped, squared_cropped, cv::Size(int(scale * cropped.cols), int(scale * cropped.rows)));
+				cv::resize(cropped, cropped, cv::Size(int(scale * cropped.cols), int(scale * cropped.rows)));
+				ROS_INFO_STREAM("Resized to " << cropped.cols << "x" << cropped.rows);
 
-				fill_x = int((desired_resolution.width - squared_cropped.cols) / 2);
-				fill_y = int((desired_resolution.height - squared_cropped.rows) / 2);
-				cv::copyMakeBorder(squared_cropped, resized, fill_x, desired_resolution.width - squared_cropped.cols - fill_x,
-				                   fill_y, desired_resolution.height - squared_cropped.rows - fill_y,
-				                   cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+				fill_x = int((desired_resolution.width - cropped.cols) / 2);
+				fill_y = int((desired_resolution.height - cropped.rows) / 2);
 
-				ROS_INFO_STREAM("Final size " << resized.size());
+				ROS_INFO_STREAM("Filling " << fill_x << " " << fill_y);
 
-				if (camera_matrix_.at<double>(0,2) != -1) {
-					send_data->bx = (bx - camera_matrix_.at<double>(0,2)) / (camera_matrix_.at<double>(0,2));
-					send_data->by = (by - camera_matrix_.at<double>(1,2)) / (camera_matrix_.at<double>(1,2));
+				ROS_INFO_STREAM("bottom " << desired_resolution.width - cropped.cols - fill_x);
+
+				cv::copyMakeBorder(cropped, resized, fill_y, desired_resolution.height - cropped.rows - fill_y,
+				                   fill_x, desired_resolution.width - cropped.cols - fill_x, cv::BORDER_CONSTANT,
+				                   cv::Scalar(0, 0, 0));
+
+				if (camera_matrix_.at<double>(0, 2) != -1) {
+					send_data->bx = float(((float)bx - (float)camera_matrix_.at<double>(0, 2)) / ((float)camera_matrix_.at<double>(0, 2)));
+					send_data->by = float(((float)by - (float)camera_matrix_.at<double>(1, 2)) / ((float)camera_matrix_.at<double>(1, 2)));
 				} else {
 					// fixme or skip frame
 					ROS_INFO_STREAM("Camera info message not yet received, using PINHOLE model!!!");
-					send_data->bx = (bx - msgp->width / 2) / (msgp->width / 2);
-					send_data->by = (by - msgp->height / 2) / (msgp->height / 2);
+					send_data->bx = (bx - msgp->width / 2.0) / (msgp->width / 2.0);
+					send_data->by = (by - msgp->height / 2.0) / (msgp->height / 2.0);
 				}
 				send_data->scale = scale;
-				send_data->state = 1;
-				ROS_INFO_STREAM("IMAGE " << msgp->header.seq << "bx " << send_data->bx << " by " << send_data->by << " scale "
+				send_data->state = 0;
+				ROS_INFO_STREAM("IMAGE " << msgp->header.seq << " bx " << send_data->bx << " by " << send_data->by << " scale "
 				                         << send_data->scale);
-
-				// convert to RGB as network wants
-				cv::cvtColor(resized, resized, CV_BGR2RGB);
 
 				//ROS_INFO("Sending to NN");
 				c_->write_bytes(buffer_send_.get(), sizeof(first_message) + length_final_img_, boost::posix_time::seconds(10));
@@ -399,8 +403,6 @@ namespace airpose_client {
 
 		void AirPoseClient::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &msg) {
 			camera_matrix_ = cv::Mat(3, 3, CV_64F, (void *) msg->K.data());
-			ROS_INFO_STREAM("Camera_info received " << camera_matrix_);
-
 //			dist_coeffs_ = cv::Mat(1, 5, CV_64F, (void *) msg->D.data());
 		}
 
@@ -466,7 +468,7 @@ namespace airpose_client {
 					continue;
 				}
 				try {
-					buffer_send_msg->state = 2;
+					buffer_send_msg->state = 1;
 					std::memcpy(&buffer_send_msg->data[0], &first_msg_.data[0], sizeof(buffer_send_msg->data));
 					c_->write_bytes((uint8_t *) buffer_send_msg.get(), sizeof(second_and_third_message),
 					                boost::posix_time::seconds(1));
@@ -512,7 +514,7 @@ namespace airpose_client {
 					continue;
 				}
 				try {
-					buffer_send_msg->state = 3;
+					buffer_send_msg->state = 2;
 					std::memcpy(&buffer_send_msg->data[0], &second_msg_.data[0], sizeof(buffer_send_msg->data));
 					c_->write_bytes((uint8_t *) buffer_send_msg.get(), sizeof(second_and_third_message),
 					                boost::posix_time::seconds(1));
