@@ -48,10 +48,12 @@ namespace airpose_client {
 				std::unique_ptr<uint8_t[]> buffer_send_; // will automatically delete when out of scope
 				std::unique_ptr<second_and_third_message> buffer_send_msg; // will automatically delete when out of scope
 				ros::Publisher step1_pub_, step2_pub_, step3_pub_;
-				ros::Subscriber feedback_sub_, step1_sub_, step2_sub_;
+				ros::Subscriber feedback_sub_, step1_sub_, step2_sub_, camera_info_sub_;
 				neural_network_detector::NeuralNetworkFeedback latest_feedback_;
 				ros::Duration timeout_;
 				double border_dropoff_{.05};
+
+				cv::Mat camera_matrix_;
 
 				// Connect to TCP server (NN)
 				bool connect();
@@ -96,6 +98,8 @@ namespace airpose_client {
 				void step1Callback(const airpose_client::AirposeNetworkDataConstPtr &msg);
 
 				void step2Callback(const airpose_client::AirposeNetworkDataConstPtr &msg);
+
+				void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &msg);
 
 				uint64_t getFrameNumber(ros::Time frameTime);
 				ros::Time getFrameTime(uint64_t frameNumber);

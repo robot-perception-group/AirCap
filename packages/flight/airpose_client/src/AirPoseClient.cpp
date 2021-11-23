@@ -78,17 +78,14 @@ namespace airpose_client {
 			std::string img_topic{"video"};
 			pnh_.getParam("img_topic", img_topic);
 
-			std::string detections_topic{"object_detections"};
-			pnh_.getParam("detections_topic", detections_topic);
-
-			std::string detection_amount_topic{"object_detections/amount"};
-			pnh_.getParam("detection_amount_topic", detection_amount_topic);
-
 			std::string feedback_topic{"object_detections/feedback"};
 			pnh_.getParam("feedback_topic", feedback_topic);
 
 			std::string step1_topic_fb{"step1_feedback"};
 			pnh_.getParam("step1_topic", step1_topic_fb);
+
+			std::string camera_info_topic{"camera_info"};
+			pnh_.getParam("camera_info_topic", camera_info_topic);
 
 			std::string step1_topic_pub{"step1_pub"};
 			pnh_.getParam("step1_topic_pub", step1_topic_pub);
@@ -176,6 +173,8 @@ namespace airpose_client {
 			step2_sub_ = nh_.subscribe(step2_topic_fb, 1, &AirPoseClient::step2Callback,
 			                           this); // queue of 1, we only want the latest image to be processed
 
+			camera_info_sub_ = nh_.subscribe(camera_info_topic, 1, &AirPoseClient::cameraInfoCallback,
+			                                 this); // queue of 1, we only want the latest image to be processed
 
 		}
 
@@ -304,16 +303,22 @@ namespace airpose_client {
 
 				ROS_INFO_STREAM("Final size " << resized.size());
 
-				// fixme not sure of what this does
-				cv::projection2i proj_scale(
-					cv::Point2f(desired_resolution.width / (float) (cropped.cols),
-					            desired_resolution.height / (float) (cropped.rows)),
-					cv::Point2i(0, 0));
-
-				send_data->bx = (mat_img_.cols / 2.0 - bx) / (mat_img_.cols / 2.0);
-				send_data->by = (mat_img_.rows / 2.0 - by) / (mat_img_.rows / 2.0);
+				if (camera_matrix_.at<double>(0,2) != -1) {
+					send_data->bx = (bx - camera_matrix_.at<double>(0,2)) / (camera_matrix_.at<double>(0,2));
+					send_data->by = (by - camera_matrix_.at<double>(1,2)) / (camera_matrix_.at<double>(1,2));
+				} else {
+					// fixme or skip frame
+					ROS_INFO_STREAM("Camera info message not yet received, using PINHOLE model!!!");
+					send_data->bx = (bx - msgp->width / 2) / (msgp->width / 2);
+					send_data->by = (by - msgp->height / 2) / (msgp->height / 2);
+				}
 				send_data->scale = scale;
 				send_data->state = 1;
+				ROS_INFO_STREAM("IMAGE " << msgp->header.seq << "bx " << send_data->bx << " by " << send_data->by << " scale "
+				                         << send_data->scale);
+
+				// convert to RGB as network wants
+				cv::cvtColor(resized, resized, CV_BGR2RGB);
 
 				//ROS_INFO("Sending to NN");
 				c_->write_bytes(buffer_send_.get(), sizeof(first_message)+length_final_img_, boost::posix_time::seconds(10));
@@ -370,6 +375,13 @@ namespace airpose_client {
 
 		void AirPoseClient::step2Callback(const airpose_client::AirposeNetworkDataConstPtr &msg) {
 			second_msg_ = *msg;
+		}
+
+		void AirPoseClient::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &msg) {
+			camera_matrix_ = cv::Mat(3, 3, CV_64F, (void *) msg->K.data());
+			ROS_INFO_STREAM("Camera_info received " << camera_matrix_);
+
+//			dist_coeffs_ = cv::Mat(1, 5, CV_64F, (void *) msg->D.data());
 		}
 
 		uint64_t AirPoseClient::getFrameNumber(ros::Time frameTime) {
