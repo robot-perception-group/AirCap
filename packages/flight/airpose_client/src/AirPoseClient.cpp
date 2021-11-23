@@ -30,7 +30,7 @@ namespace airpose_client {
 		cv::Rect get_crop_area(const neural_network_detector::NeuralNetworkFeedback &latest_feedback,
 		                       const cv::Size2i &original_resolution,
 		                       const cv::Size2i &desired_resolution, float aspect_ratio,
-		                       int &bx, int &by,
+		                       float &bx, float &by,
 		                       const bool timed_out = false) {
 			// Feedback - zoom level
 			if (timed_out || latest_feedback.ymin > original_resolution.height || latest_feedback.ymax < 0) {
@@ -280,7 +280,7 @@ namespace airpose_client {
 				}
 				ROS_INFO_STREAM("Latest feedback id " << latest_feedback_.header.seq << " timed out " << timed_out);
 
-				int bx, by;
+				float bx, by;
 				// Create an auxiliary, custom projection object to aid in calculations
 				const auto crop_area = get_crop_area(latest_feedback_, original_resolution, desired_resolution, aspect_ratio,
 				                                     bx, by, timed_out);
@@ -332,8 +332,8 @@ namespace airpose_client {
 				                   cv::Scalar(0, 0, 0));
 
 				if (camera_matrix_.at<double>(0, 2) != -1) {
-					send_data->bx = float(((float)bx - (float)camera_matrix_.at<double>(0, 2)) / ((float)camera_matrix_.at<double>(0, 2)));
-					send_data->by = float(((float)by - (float)camera_matrix_.at<double>(1, 2)) / ((float)camera_matrix_.at<double>(1, 2)));
+					send_data->bx = (float) (bx / camera_matrix_.at<double>(0, 2) - 1);
+					send_data->by = (float) (by / camera_matrix_.at<double>(1, 2) - 1);
 				} else {
 					// fixme or skip frame
 					ROS_INFO_STREAM("Camera info message not yet received, using PINHOLE model!!!");
@@ -342,10 +342,8 @@ namespace airpose_client {
 				}
 				send_data->scale = scale;
 				send_data->state = 0;
-				ROS_INFO_STREAM("IMAGE " << msgp->header.seq << " bx " << send_data->bx << " by " << send_data->by << " scale "
-				                         << send_data->scale);
-
-				//ROS_INFO("Sending to NN");
+				ROS_INFO_STREAM("IMAGE " << std::setprecision(15) << msgp->header.seq << " bx " << send_data->bx << " by " << send_data->by << " scale "
+				                         << send_data->scale << " cx " << camera_matrix_.at<double>(0,2) << " cy " << camera_matrix_.at<double>(1,2));
 				c_->write_bytes(buffer_send_.get(), sizeof(first_message) + length_final_img_, boost::posix_time::seconds(10));
 
 				// Array to be published
