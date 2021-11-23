@@ -6,6 +6,8 @@
 #include <airpose_client/BoostTCPClient.h>
 #include <sensor_msgs/Image.h>
 #include <opencv2/core/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
 #include <image_transport/image_transport.h>
 #include <neural_network_detector/NeuralNetworkFeedback.h>
 #include <airpose_client/AirposeNetworkData.h>
@@ -28,7 +30,7 @@ namespace airpose_client {
 
 		cv::Rect get_crop_area(const neural_network_detector::NeuralNetworkFeedback &latest_feedback,
 		                       const cv::Size2i &original_resolution, const cv::Size2i &desired_resolution,
-		                       float aspect_ratio, cv::projection2i &proj_crop, int &bx, int &by, bool timed_out);
+		                       float aspect_ratio, int &bx, int &by, bool timed_out);
 
 		class AirPoseClient {
 		private:

@@ -7,6 +7,26 @@ namespace airpose_client {
 
 		static const int color_channels = 3;
 
+		void AirPoseClient::reproject_image(const cv::Mat& image, int& ymin, int& ymax, int& xmin, int& xmax){
+			if (map1.empty() || map2.empty()) {
+				// first cv::Mat is the D coeffs, second is R (should be left empty)
+				cv::initUndistortRectifyMap(camera_matrix_, cv::Mat(), cv::Mat(),
+				                            airpose_camera_matrix_, image.size(), CV_16SC2, map1, map2);
+				cv::initUndistortRectifyMap(airpose_camera_matrix_, cv::Mat(), cv::Mat(),
+				                            camera_matrix_, image.size(), CV_16SC2, map1_inverse, map2_inverse);
+      }
+
+			cv::remap(image, image, map1, map2, cv::INTER_LINEAR);
+			// todo debug this -- order y/x 0,1
+			// in python seemed correct
+			ymin = map1_inverse.at<cv::Vec2s>(ymin, xmin)[1];
+			xmin = map1_inverse.at<cv::Vec2s>(ymin, xmin)[0];
+			if (ymax != -1){
+				ymax = map1_inverse.at<cv::Vec2s>(ymax, xmax)[1];
+				xmax = map1_inverse.at<cv::Vec2s>(ymax, xmax)[0];
+			}
+		}
+
 		cv::Rect get_crop_area(const neural_network_detector::NeuralNetworkFeedback &latest_feedback,
 		                       const cv::Size2i &original_resolution,
 		                       const cv::Size2i &desired_resolution, float aspect_ratio,
@@ -23,6 +43,9 @@ namespace airpose_client {
 			// Clamp the values to resolution
 			int16_t ymin = std::max<int16_t>(latest_feedback.ymin, 0);
 			int16_t ymax = std::min<int16_t>(latest_feedback.ymax, original_resolution.height);
+
+			// todo add reprojection if necessary
+
 
 			// we have ground truth, so we can crop the image to the ground truth
 			if (latest_feedback.debug_included == true) {
@@ -109,14 +132,21 @@ namespace airpose_client {
 			pnh_.getParam("timing/communication_stage1", timing_communication_stage1);
 			pnh_.getParam("timing/communication_stage2", timing_communication_stage2);
 			pnh_.getParam("timing/communication_stage3", timing_communication_stage3);
-			timing_whole_sequence = timing_network_stage1 + timing_network_stage2 + timing_network_stage3 + timing_communication_stage1 + timing_communication_stage2 + timing_camera;
 
-			pnh_.getParam("border_dropoff", border_dropoff_);
+			double fx, fy, cx, cy;
+			pnh_.getParam("network_camera_matrix/fx", fx);
+			pnh_.getParam("network_camera_matrix/fy", fy);
+			pnh_.getParam("network_camera_matrix/cx", cx);
+			pnh_.getParam("network_camera_matrix/cy", cy);
+			airpose_camera_matrix_ = cv::Mat::eye(3, 3, CV_64F);
+			airpose_camera_matrix_.at<double>(0, 0) = fx;
+			airpose_camera_matrix_.at<double>(1, 1) = fy;
+			airpose_camera_matrix_.at<double>(0, 2) = cx;
+			airpose_camera_matrix_.at<double>(1, 2) = cy;
 
-			pnh_.getParam("variance/x/min", var_const_x_min);
-			pnh_.getParam("variance/x/max", var_const_x_max);
-			pnh_.getParam("variance/y/min", var_const_y_min);
-			pnh_.getParam("variance/x/max", var_const_y_max);
+			timing_whole_sequence =
+				timing_network_stage1 + timing_network_stage2 + timing_network_stage3 + timing_communication_stage1 +
+				timing_communication_stage2 + timing_camera;
 
 			if (pnh_.getParam("max_update/force", max_update_force)) {
 				if (max_update_force) {
