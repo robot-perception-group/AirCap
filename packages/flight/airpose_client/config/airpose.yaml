@@ -11,6 +11,13 @@ timing:
   communication_stage2: 0.025
   communication_stage3: 0.05
 
+# I need fix
+network_camera_matrix:
+  fx: 3602.380733
+  fy: 3615.060635
+  cx: 1208.348894
+  cy: 992.675623
+
 score_threshold: 0.3
 desired_class: 15
 aspect_ratio: 1.333333333

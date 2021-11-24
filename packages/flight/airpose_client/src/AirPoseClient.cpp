@@ -7,7 +7,7 @@ namespace airpose_client {
 
 		static const int color_channels = 3;
 
-		void AirPoseClient::reproject_image(const cv::Mat &image, int &ymin, int &ymax, int &xmin, int &xmax) {
+		void AirPoseClient::reproject_image(const cv::Mat &image) {
 			if (map1.empty() || map2.empty()) {
 				// first cv::Mat is the D coeffs, second is R (should be left empty)
 				cv::initUndistortRectifyMap(camera_matrix_, cv::Mat(), cv::Mat(),
@@ -19,11 +19,32 @@ namespace airpose_client {
 			cv::remap(image, image, map1, map2, cv::INTER_LINEAR);
 			// todo debug this -- order y/x 0,1
 			// in python seemed correct
-			ymin = map1_inverse.at<cv::Vec2s>(ymin, xmin)[1];
-			xmin = map1_inverse.at<cv::Vec2s>(ymin, xmin)[0];
-			if (ymax != -1) {
-				ymax = map1_inverse.at<cv::Vec2s>(ymax, xmax)[1];
-				xmax = map1_inverse.at<cv::Vec2s>(ymax, xmax)[0];
+			if (latest_feedback_.debug_included) {
+				int ymin = -1, ymax = -1, xmin = -1, xmax = -1;
+				ymin = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymin, latest_feedback_.ycenter)[1];
+				ymax = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymax, latest_feedback_.xcenter)[1];
+				xmin = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymin, latest_feedback_.ycenter)[0];
+				xmax = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymax, latest_feedback_.xcenter)[0];
+//				ROS_INFO_STREAM("axmin: " << latest_feedback_.ycenter << " xmax: " << latest_feedback_.xcenter << " ymin: " << latest_feedback_.ymin << " ymax: " << latest_feedback_.ymax);
+//				ROS_INFO_STREAM("axmin: " << xmin << " xmax: " << xmax << " ymin: " << ymin << " ymax: " << ymax);
+
+				latest_feedback_.ymin = ymin;
+				latest_feedback_.ycenter = xmin;
+				latest_feedback_.ymax = ymax;
+				latest_feedback_.xcenter = xmax;
+//				ROS_INFO_STREAM("axmin: " << latest_feedback_.ycenter << " xmax: " << latest_feedback_.xcenter << " ymin: " << latest_feedback_.ymin << " ymax: " << latest_feedback_.ymax);
+			}
+			else{
+				int ymin = -1, ymax = -1, xcenter = -1, ycenter = -1;
+				ymin = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymin, latest_feedback_.xcenter)[1];
+				ymax = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymax, latest_feedback_.xcenter)[1];
+				xcenter = map1_inverse.at<cv::Vec2s>(latest_feedback_.ycenter, latest_feedback_.xcenter)[0];
+				ycenter = map1_inverse.at<cv::Vec2s>(latest_feedback_.ycenter, latest_feedback_.xcenter)[1];
+
+				latest_feedback_.ymin = ymin;
+				latest_feedback_.ycenter = ycenter;
+				latest_feedback_.ymax = ymax;
+				latest_feedback_.xcenter = xcenter;
 			}
 		}
 
@@ -43,8 +64,6 @@ namespace airpose_client {
 			// Clamp the values to resolution
 			int16_t ymin = std::max<int16_t>(latest_feedback.ymin, 0);
 			int16_t ymax = std::min<int16_t>(latest_feedback.ymax, original_resolution.height);
-
-			// todo add reprojection if necessary
 
 			// we have ground truth, so we can crop the image to the ground truth
 			if (latest_feedback.debug_included == true) {
@@ -145,6 +164,7 @@ namespace airpose_client {
 			airpose_camera_matrix_.at<double>(1, 1) = fy;
 			airpose_camera_matrix_.at<double>(0, 2) = cx;
 			airpose_camera_matrix_.at<double>(1, 2) = cy;
+//			ROS_INFO_STREAM(airpose_camera_matrix_);
 
 			timing_whole_sequence =
 				timing_network_stage1 + timing_network_stage2 + timing_network_stage3 + timing_communication_stage1 +
@@ -286,6 +306,13 @@ namespace airpose_client {
 						timed_out = true;
 					}
 				}
+
+//				cv::imwrite("orig.png", mat_img_);
+//				// fixme reproject image if necessary
+//				reproject_image(mat_img_);
+//				cv::imwrite("reproj.png", mat_img_);
+//				ROS_INFO_STREAM(latest_feedback_.ymin << " " << latest_feedback_.ymax);
+//				cv::waitKey(0);
 
 				float bx, by;
 				// Create an auxiliary, custom projection object to aid in calculations

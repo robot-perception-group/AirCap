@@ -58,7 +58,7 @@ namespace airpose_client {
 				cv::Mat airpose_camera_matrix_;
 				cv::Mat map1, map2, map1_inverse, map2_inverse;
 
-				void reproject_image(const cv::Mat& image, int& ymin, int& ymax, int& xmin, int& xmax);
+				void reproject_image(const cv::Mat& image);
 
 				ros::Duration timeout_;
 				double border_dropoff_{.05};
