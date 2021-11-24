@@ -46,7 +46,6 @@ namespace airpose_client {
 
 			// todo add reprojection if necessary
 
-
 			// we have ground truth, so we can crop the image to the ground truth
 			if (latest_feedback.debug_included == true) {
 				// Clamp the values to resolution
@@ -99,20 +98,22 @@ namespace airpose_client {
 			std::string feedback_topic{"object_detections/feedback"};
 			pnh_.getParam("feedback_topic", feedback_topic);
 
-			std::string step1_topic_fb{"step1_feedback"};
-			pnh_.getParam("step1_topic", step1_topic_fb);
+			int robotID;
+			pnh_.getParam("robotID", robotID);
+			int other_robotID = robotID == 1 ? 2 : 1;
+			ROS_INFO_STREAM("robotID: " << robotID << " other_robotID: " << other_robotID);
+
 
 			std::string camera_info_topic{"camera/info"};
 			pnh_.getParam("camera_info_topic", camera_info_topic);
 
 			std::string step1_topic_pub{"step1_pub"};
 			pnh_.getParam("step1_topic_pub", step1_topic_pub);
-
-			std::string step2_topic_fb{"step2_feedback"};
-			pnh_.getParam("step2_topic", step2_topic_fb);
+			std::string step1_topic_fb{"/machine_" + std::to_string(other_robotID) + "/" + step1_topic_pub};
 
 			std::string step2_topic_pub{"step2_pub"};
 			pnh_.getParam("step2_topic_pub", step2_topic_pub);
+			std::string step2_topic_fb{"/machine_" + std::to_string(other_robotID) + "/" + step2_topic_pub};
 
 			std::string step3_topic_pub{"step3_pub"};
 			pnh_.getParam("step3_topic_pub", step3_topic_pub);
@@ -191,14 +192,13 @@ namespace airpose_client {
 
 
 			step1_sub_ = nh_.subscribe(step1_topic_fb, 1, &AirPoseClient::step1Callback,
-			                           this); // queue of 1, we only want the latest image to be processed
+			                           this); // queue of 1, we only want the latest msg to be processed
 
 			step2_sub_ = nh_.subscribe(step2_topic_fb, 1, &AirPoseClient::step2Callback,
-			                           this); // queue of 1, we only want the latest image to be processed
+			                           this); // queue of 1, we only want the latest msg to be processed
 
 			camera_info_sub_ = nh_.subscribe(camera_info_topic, 1, &AirPoseClient::cameraInfoCallback,
-			                                 this); // queue of 1, we only want the latest image to be processed
-
+			                                 this); // queue of 1, we only want the msg image to be processed
 		}
 
 		bool AirPoseClient::connectMultiple(ros::Rate sleeper, int tries) {
@@ -278,7 +278,14 @@ namespace airpose_client {
 					ROS_INFO_STREAM("Timeout " << timeout_ << " msgp " << msgp->header.stamp << " latest_feedback "
 					                           << latest_feedback_.header.stamp);
 				}
-				ROS_INFO_STREAM("Latest feedback id " << latest_feedback_.header.seq << " timed out " << timed_out);
+//				ROS_INFO_STREAM("Latest feedback id " << latest_feedback_.header.seq << " timed out " << timed_out);
+
+				if (latest_feedback_.debug_included == true) {
+					// force skip if benchtest is active
+					if (latest_feedback_.header.seq != msgp->header.seq) {
+						timed_out = true;
+					}
+				}
 
 				float bx, by;
 				// Create an auxiliary, custom projection object to aid in calculations
@@ -286,6 +293,8 @@ namespace airpose_client {
 				                                     bx, by, timed_out);
 				if (crop_area.width == 0) {
 					ROS_WARN("No crop area found, skipping frame");
+					ROS_WARN_STREAM("Timeout is " << timed_out << " msgp " << msgp->header.seq << " latest_feedback "
+					                              << latest_feedback_.header.seq);
 					// todo check what to do in this case
 					return;
 				}
@@ -318,14 +327,12 @@ namespace airpose_client {
 				}
 
 				cv::resize(cropped, cropped, cv::Size(int(scale * cropped.cols), int(scale * cropped.rows)));
-				ROS_INFO_STREAM("Resized to " << cropped.cols << "x" << cropped.rows);
+//				ROS_INFO_STREAM("Resized to " << cropped.cols << "x" << cropped.rows);
 
 				fill_x = int((desired_resolution.width - cropped.cols) / 2);
 				fill_y = int((desired_resolution.height - cropped.rows) / 2);
 
-				ROS_INFO_STREAM("Filling " << fill_x << " " << fill_y);
-
-				ROS_INFO_STREAM("bottom " << desired_resolution.width - cropped.cols - fill_x);
+//				ROS_INFO_STREAM("Filling " << fill_x << " " << fill_y);
 
 				cv::copyMakeBorder(cropped, resized, fill_y, desired_resolution.height - cropped.rows - fill_y,
 				                   fill_x, desired_resolution.width - cropped.cols - fill_x, cv::BORDER_CONSTANT,
@@ -342,8 +349,9 @@ namespace airpose_client {
 				}
 				send_data->scale = scale;
 				send_data->state = 0;
-				ROS_INFO_STREAM("IMAGE " << std::setprecision(15) << msgp->header.seq << " bx " << send_data->bx << " by " << send_data->by << " scale "
-				                         << send_data->scale << " cx " << camera_matrix_.at<double>(0,2) << " cy " << camera_matrix_.at<double>(1,2));
+				ROS_INFO_STREAM("Image id " << msgp->header.seq << " feedback id: " << latest_feedback_.header.seq);
+//				ROS_INFO_STREAM("IMAGE " << std::setprecision(15) << msgp->header.seq << " bx " << send_data->bx << " by " << send_data->by << " scale "
+//				                         << send_data->scale << " cx " << camera_matrix_.at<double>(0,2) << " cy " << camera_matrix_.at<double>(1,2));
 				c_->write_bytes(buffer_send_.get(), sizeof(first_message) + length_final_img_, boost::posix_time::seconds(10));
 
 				// Array to be published
@@ -358,10 +366,12 @@ namespace airpose_client {
 				// Read the count from the buffer
 				c_->read_bytes((uint8_t *) &network_data_msg.data[0], sizeof(network_data_msg.data), boost::posix_time::seconds(
 					10)); // 2 seconds are not enough here, initialization on first conect might take longer
+//				for (auto d: network_data_msg.data) {
+//					ROS_INFO_STREAM("Network data: " << d);
+//				}
 
 				// IMPORTANT - the network finished executing - advancing sequencer
 				timing_current_stage = 2;
-
 				step1_pub_.publish(network_data_msg);
 			}
 			catch (std::exception &e) {
@@ -393,6 +403,7 @@ namespace airpose_client {
 
 		void AirPoseClient::step1Callback(const airpose_client::AirposeNetworkDataConstPtr &msg) {
 			first_msg_ = *msg;
+			ROS_INFO_STREAM("Received first message: " << first_msg_.data[0] << " " << first_msg_.data[1]);
 		}
 
 		void AirPoseClient::step2Callback(const airpose_client::AirposeNetworkDataConstPtr &msg) {
@@ -438,7 +449,7 @@ namespace airpose_client {
 			while (ros::ok()) {
 				uint64_t currentFrame = getFrameNumber(ros::Time::now() + ros::Duration(timing_camera * 0.5));
 				timing_next_wakeup = getFrameTime(currentFrame) +
-				                     ros::Duration(timing_camera + timing_network_stage1 + timing_communication_stage1);
+				                     ros::Duration(timing_camera*.5 + timing_network_stage1 + timing_communication_stage1);
 				sleep_until(timing_next_wakeup);
 				switch (timing_current_stage) {
 					case 2:
@@ -462,14 +473,20 @@ namespace airpose_client {
 				// check if data for stage 1 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
 				if (getFrameNumber(first_msg_.header.stamp) != currentFrame) {
+//					ROS_INFO_STREAM("Current frame 1 " << currentFrame);
+//					ROS_INFO_STREAM("Current frame 2 " << getFrameNumber(first_msg_.header.stamp + ros::Duration(timing_camera * 0.5)) );
 					resetLoop(currentFrame);
 					continue;
 				}
 				try {
 					buffer_send_msg->state = 1;
 					std::memcpy(&buffer_send_msg->data[0], &first_msg_.data[0], sizeof(buffer_send_msg->data));
+//					for (auto d: first_msg_.data) {
+//						ROS_INFO_STREAM("Network data from other copter: " << d);
+//					}
 					c_->write_bytes((uint8_t *) buffer_send_msg.get(), sizeof(second_and_third_message),
 					                boost::posix_time::seconds(1));
+
 
 					airpose_client::AirposeNetworkData network_data_msg;
 					network_data_msg.header.frame_id = first_msg_.header.frame_id;
@@ -514,6 +531,9 @@ namespace airpose_client {
 				try {
 					buffer_send_msg->state = 2;
 					std::memcpy(&buffer_send_msg->data[0], &second_msg_.data[0], sizeof(buffer_send_msg->data));
+//					for (auto d: second_msg_.data) {
+//						ROS_INFO_STREAM("Network data from other copter: " << d);
+//					}
 					c_->write_bytes((uint8_t *) buffer_send_msg.get(), sizeof(second_and_third_message),
 					                boost::posix_time::seconds(1));
 
