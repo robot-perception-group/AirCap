@@ -403,7 +403,6 @@ namespace airpose_client {
 
 		void AirPoseClient::step1Callback(const airpose_client::AirposeNetworkDataConstPtr &msg) {
 			first_msg_ = *msg;
-			ROS_INFO_STREAM("Received first message: " << first_msg_.data[0] << " " << first_msg_.data[1]);
 		}
 
 		void AirPoseClient::step2Callback(const airpose_client::AirposeNetworkDataConstPtr &msg) {
@@ -449,7 +448,7 @@ namespace airpose_client {
 			while (ros::ok()) {
 				uint64_t currentFrame = getFrameNumber(ros::Time::now() + ros::Duration(timing_camera * 0.5));
 				timing_next_wakeup = getFrameTime(currentFrame) +
-				                     ros::Duration(timing_camera*.5 + timing_network_stage1 + timing_communication_stage1);
+				                     ros::Duration(timing_camera + timing_network_stage1 + timing_communication_stage1);
 				sleep_until(timing_next_wakeup);
 				switch (timing_current_stage) {
 					case 2:
@@ -476,9 +475,11 @@ namespace airpose_client {
 //					ROS_INFO_STREAM("Current frame 1 " << currentFrame);
 //					ROS_INFO_STREAM("Current frame 2 " << getFrameNumber(first_msg_.header.stamp + ros::Duration(timing_camera * 0.5)) );
 					resetLoop(currentFrame);
+					ROS_INFO_STREAM("Step 2 skip..");
 					continue;
 				}
 				try {
+					ROS_INFO_STREAM("Step 2 init..");
 					buffer_send_msg->state = 1;
 					std::memcpy(&buffer_send_msg->data[0], &first_msg_.data[0], sizeof(buffer_send_msg->data));
 //					for (auto d: first_msg_.data) {
@@ -525,9 +526,11 @@ namespace airpose_client {
 				// if it was received the subscribers wrote it in the respective objects
 				if (getFrameNumber(second_msg_.header.stamp) != currentFrame) {
 					resetLoop(currentFrame);
+					ROS_INFO_STREAM("Step 3 skip..");
 					continue;
 				}
 				try {
+					ROS_INFO_STREAM("Step 3 init..");
 					buffer_send_msg->state = 2;
 					std::memcpy(&buffer_send_msg->data[0], &second_msg_.data[0], sizeof(buffer_send_msg->data));
 //					for (auto d: second_msg_.data) {

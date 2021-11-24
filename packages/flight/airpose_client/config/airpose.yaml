@@ -3,13 +3,13 @@ desired_resolution:
   y: 224
 
 timing:
-  camera: 0.05
-  network_stage1: 0.05
-  network_stage2: 0.005
-  network_stage3: 0.005
+  camera: 0.025
+  network_stage1: 0.025
+  network_stage2: 0.0025
+  network_stage3: 0.0025
   communication_stage1: 0.025
   communication_stage2: 0.025
-  communication_stage3: 0.025
+  communication_stage3: 0.05
 
 score_threshold: 0.3
 desired_class: 15

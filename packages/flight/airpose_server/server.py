@@ -11,6 +11,7 @@ import select
 import socket
 import sys
 import binary_structs
+import time
 
 def fix_state_dict(old_state_dict):
     #state dicts created with DataParallel or DistributedDataParallel have a prefix to all keys
@@ -195,7 +196,7 @@ while inputs:
                 input_queues[fd] += data
                 if stage == -1:
                     stage=np.frombuffer(input_queues[fd],dtype=np.uint8,count=1)[0]
-                print("stage:{}".format(stage))
+                    print("stage:{} {}".format(stage,time.time()))
                 if (len(input_queues[fd])>=BUFFERSIZE_STAGES and stage!=0):
                     output_queues[fd].insert(0,process(input_queues[fd],conninfo[fd],stage))
                     input_queues[fd]=input_queues[fd][BUFFERSIZE_STAGES:]
