@@ -100,7 +100,7 @@ FIND_PACKAGE(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 ADD_MESSAGE_FILES(
    DIRECTORY msg
-   FILES AirposeNetworkData.msg
+   FILES AirposeNetworkData.msg AirposeNetworkResult.msg
 )
 
 ## Generate added messages and services with any dependencies listed here

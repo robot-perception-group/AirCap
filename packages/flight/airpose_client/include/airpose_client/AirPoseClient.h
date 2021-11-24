@@ -12,6 +12,7 @@
 #include <image_transport/image_transport.h>
 #include <neural_network_detector/NeuralNetworkFeedback.h>
 #include <airpose_client/AirposeNetworkData.h>
+#include <airpose_client/AirposeNetworkResult.h>
 #include <cv/extensions/projection.h>
 
 namespace airpose_client {

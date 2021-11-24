@@ -493,8 +493,7 @@ namespace airpose_client {
 					network_data_msg.header.stamp = timing_current_frame_time;
 
 					c_->read_bytes((uint8_t *) &network_data_msg.data[0], sizeof(network_data_msg.data),
-					               boost::posix_time::seconds(
-						               1));
+					               boost::posix_time::seconds(1));
 					//PUBLISH DATA TO OTHER COPTER
 					step2_pub_.publish(network_data_msg);
 					timing_current_stage = 3;
@@ -537,15 +536,14 @@ namespace airpose_client {
 					c_->write_bytes((uint8_t *) buffer_send_msg.get(), sizeof(second_and_third_message),
 					                boost::posix_time::seconds(1));
 
-					airpose_client::AirposeNetworkData network_data_msg;
-					network_data_msg.header.frame_id = second_msg_.header.frame_id;
-					network_data_msg.header.stamp = timing_current_frame_time;
+					airpose_client::AirposeNetworkResult network_result_msg;
+					network_result_msg.header.frame_id = second_msg_.header.frame_id;
+					network_result_msg.header.stamp = timing_current_frame_time;
 
-					c_->read_bytes((uint8_t *) &network_data_msg.data[0], sizeof(network_data_msg.data),
-					               boost::posix_time::seconds(
-						               1));
+					c_->read_bytes((uint8_t *) &network_result_msg.data[0], sizeof(network_result_msg.data),
+					               boost::posix_time::seconds(1));
 					//PUBLISH DATA TO THE WORLD
-					step3_pub_.publish(network_data_msg);
+					step3_pub_.publish(network_result_msg);
 				}
 				catch (std::exception &e) {
 					ROS_WARN("Exception: %s", e.what());
