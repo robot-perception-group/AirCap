@@ -2,7 +2,7 @@ desired_resolution:
   x: 224
   y: 224
 
-min_area: 50
+min_area: 50 # this will be squared in the code
 
 timing:
   camera: 0.1
