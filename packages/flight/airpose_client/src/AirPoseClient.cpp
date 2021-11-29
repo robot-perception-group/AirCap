@@ -121,6 +121,9 @@ namespace airpose_client {
 			pnh_.param<int>("desired_resolution/x", desired_resolution.width, 224);
 			pnh_.param<int>("desired_resolution/y", desired_resolution.height, 224);
 
+			pnh_.param<int>("min_area", min_area_, 50);
+			min_area_ *= min_area_;
+
 			pnh_.getParam("aspect_ratio", aspect_ratio);
 
 			double timeout_sec = 5.0;
@@ -313,11 +316,14 @@ namespace airpose_client {
 				const auto crop_area = get_crop_area(latest_feedback_, original_resolution, bx, by, timed_out);
 				if (crop_area.width == 0) {
 					ROS_WARN("No crop area found, skipping frame");
-					ROS_WARN_STREAM("Timeout is " << timed_out << " msgp " << msgp->header.seq << " latest_feedback "
-					                              << latest_feedback_.header.seq);
+//					ROS_WARN_STREAM("Timeout is " << timed_out << " msgp " << msgp->header.seq << " latest_feedback "
+//					                              << latest_feedback_.header.seq);
 					// todo check what to do in this case
 					return;
 				}
+				else if (crop_area.height * crop_area.width < min_area_) {
+					ROS_WARN("Very small area, skipping frame");
+        }
 
 				// we accepted a frame, advancing stage
 				timing_current_stage = 1;

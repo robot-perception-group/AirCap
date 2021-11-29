@@ -2,14 +2,16 @@ desired_resolution:
   x: 224
   y: 224
 
+min_area: 50
+
 timing:
-  camera: 0.025
-  network_stage1: 0.025
+  camera: 0.1
+  network_stage1: 0.0025
   network_stage2: 0.0025
   network_stage3: 0.0025
   communication_stage1: 0.025
   communication_stage2: 0.025
-  communication_stage3: 0.05
+#  communication_stage3: 0.05
 
 # I need fix
 network_camera_matrix_1:

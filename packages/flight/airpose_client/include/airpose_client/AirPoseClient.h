@@ -71,6 +71,8 @@ namespace airpose_client {
 				ros::Duration timeout_;
 				double border_dropoff_{.05};
 
+				int min_area_{50*50};
+
 				cv::Mat camera_matrix_;
 
 				bool has_groundtruth{false}, need_reproj{false};
