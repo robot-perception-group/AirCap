@@ -24,7 +24,7 @@ HUMAN_INPUT="[1"
 
 Xs=( -15 -10 -8 -6 -4 5 0 2 4 6 8 10 15)
 Ys=( -15 -10 -8 -6 -4 5 0 2 4 6 8 10 15)
-# LOGPATH="/media/ssd/RECORD"
+LOGPATH="/home/ebonetto/tmp"
 
 if [ $# -lt 1 ]; then
         echo "usage: $0 <number of robots> <communication success rate> <experiment title>"
@@ -44,9 +44,6 @@ screen -d -m -S GAZEBO bash -i -c "roslaunch rotors_gazebo world.launch world_na
 # rosrun uavPidParamServer pid_serverNode &
 sleep 10
 
-echo "Starting Deep Neural Network Server..."
-screen -d -m -S SSDSERVER bash -i -c "./ssd_server.sh 0"
-sleep 5
 
 #roslaunch random_moving_target spawn_move_target_withID.launch joyDevName:=0 directUseForFormation:=true --screen &
 

@@ -58,7 +58,15 @@ namespace airpose_client {
 				cv::Mat airpose_camera_matrix_;
 				cv::Mat map1, map2, map1_inverse, map2_inverse;
 
-				void reproject_image(const cv::Mat& image);
+				void reproject_coord(int16_t &xmin, int16_t &ymin, int16_t &xmax,
+				                     int16_t &ymax, cv::Size2i original_resolution);
+
+				void reproject_image(const cv::Mat &image);
+
+				cv::Rect get_crop_area(const neural_network_detector::NeuralNetworkFeedback &latest_feedback,
+				                       const cv::Size2i &original_resolution,
+				                       float &bx, float &by,
+				                       const bool timed_out);
 
 				ros::Duration timeout_;
 				double border_dropoff_{.05};
@@ -114,9 +122,13 @@ namespace airpose_client {
 				void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &msg);
 
 				uint64_t getFrameNumber(ros::Time frameTime);
+
 				ros::Time getFrameTime(uint64_t frameNumber);
+
 				void resetLoop(uint64_t FrameNumber);
+
 				void sleep_until(ros::Time then);
+
 				void mainLoop(void);
 		};
 

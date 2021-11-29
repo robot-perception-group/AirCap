@@ -17,42 +17,27 @@ namespace airpose_client {
 			}
 
 			cv::remap(image, image, map1, map2, cv::INTER_LINEAR);
-			// todo debug this -- order y/x 0,1
-			// in python seemed correct
-			if (latest_feedback_.debug_included) {
-				int ymin = -1, ymax = -1, xmin = -1, xmax = -1;
-				ymin = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymin, latest_feedback_.ycenter)[1];
-				ymax = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymax, latest_feedback_.xcenter)[1];
-				xmin = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymin, latest_feedback_.ycenter)[0];
-				xmax = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymax, latest_feedback_.xcenter)[0];
-//				ROS_INFO_STREAM("axmin: " << latest_feedback_.ycenter << " xmax: " << latest_feedback_.xcenter << " ymin: " << latest_feedback_.ymin << " ymax: " << latest_feedback_.ymax);
-//				ROS_INFO_STREAM("axmin: " << xmin << " xmax: " << xmax << " ymin: " << ymin << " ymax: " << ymax);
-
-				latest_feedback_.ymin = ymin;
-				latest_feedback_.ycenter = xmin;
-				latest_feedback_.ymax = ymax;
-				latest_feedback_.xcenter = xmax;
-//				ROS_INFO_STREAM("axmin: " << latest_feedback_.ycenter << " xmax: " << latest_feedback_.xcenter << " ymin: " << latest_feedback_.ymin << " ymax: " << latest_feedback_.ymax);
-			}
-			else{
-				int ymin = -1, ymax = -1, xcenter = -1, ycenter = -1;
-				ymin = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymin, latest_feedback_.xcenter)[1];
-				ymax = map1_inverse.at<cv::Vec2s>(latest_feedback_.ymax, latest_feedback_.xcenter)[1];
-				xcenter = map1_inverse.at<cv::Vec2s>(latest_feedback_.ycenter, latest_feedback_.xcenter)[0];
-				ycenter = map1_inverse.at<cv::Vec2s>(latest_feedback_.ycenter, latest_feedback_.xcenter)[1];
-
-				latest_feedback_.ymin = ymin;
-				latest_feedback_.ycenter = ycenter;
-				latest_feedback_.ymax = ymax;
-				latest_feedback_.xcenter = xcenter;
-			}
 		}
 
-		cv::Rect get_crop_area(const neural_network_detector::NeuralNetworkFeedback &latest_feedback,
-		                       const cv::Size2i &original_resolution,
-		                       const cv::Size2i &desired_resolution, float aspect_ratio,
-		                       float &bx, float &by,
-		                       const bool timed_out = false) {
+		void AirPoseClient::reproject_coord(int16_t &xmin, int16_t &ymin, int16_t &xmax, int16_t &ymax,
+		                                    cv::Size2i original_resolution) {
+			// todo debug this -- order y/x 0,1
+			int xmin_new, ymin_new, xmax_new, ymax_new;
+			ymin_new = map1_inverse.at<cv::Vec2s>(ymin, xmin)[1];
+			ymax_new = map1_inverse.at<cv::Vec2s>(ymax, xmax)[1];
+			xmin_new = map1_inverse.at<cv::Vec2s>(ymin, xmin)[0];
+			xmax_new = map1_inverse.at<cv::Vec2s>(ymax, xmax)[0];
+
+			ymin = std::max<int16_t>(ymin_new, 0);
+			xmin = std::max<int16_t>(xmin_new, 0);
+			ymax = std::min<int16_t>(ymax_new, original_resolution.height);
+			xmax = std::min<int16_t>(xmax_new, original_resolution.width);
+		}
+
+		cv::Rect AirPoseClient::get_crop_area(const neural_network_detector::NeuralNetworkFeedback &latest_feedback,
+		                                      const cv::Size2i &original_resolution,
+		                                      float &bx, float &by,
+		                                      const bool timed_out = false) {
 			// Feedback - zoom level
 			if (timed_out || latest_feedback.ymin > original_resolution.height || latest_feedback.ymax < 0) {
 				// Special case - target is not in view of camera frame - flagged by ymin > max_y or ymax < 0
@@ -60,10 +45,12 @@ namespace airpose_client {
 				return cv::Rect(0, 0, 0, 0);
 			}
 
-
 			// Clamp the values to resolution
 			int16_t ymin = std::max<int16_t>(latest_feedback.ymin, 0);
 			int16_t ymax = std::min<int16_t>(latest_feedback.ymax, original_resolution.height);
+
+			int16_t xmin = -1;
+			int16_t xmax = -1;
 
 			// we have ground truth, so we can crop the image to the ground truth
 			if (has_groundtruth) {
@@ -72,17 +59,9 @@ namespace airpose_client {
 				                                 0); // xcenter is not a typo, it is xmin in the gt data
 				int16_t xmax = std::min<int16_t>(latest_feedback.xcenter,
 				                                 original_resolution.width); // ycenter is not a typo, it is xmax in the gt data
-
-				bx = (xmax + xmin) / 2;
-				by = (ymax + ymin) / 2;
-				ROS_INFO_STREAM("xmin: " << xmin << " xmax: " << xmax << " ymin: " << ymin << " ymax: " << ymax);
-
-				return cv::Rect(xmin, ymin, xmax - xmin, ymax - ymin);
 			}
-				// we have no ground truth, so we need to crop the image to the desired resolution
+			// we have no ground truth, so we need to crop the image to the desired resolution
 			else {
-
-				// fixme: this is old code, might be wrong in some way in our case
 
 				// Given the aspect ratio that the NN wants, obtain x values
 				// Minimum of 10% of desired resolution is required
@@ -93,8 +72,6 @@ namespace airpose_client {
 				int16_t half_delta_x = (int16_t) (.5 * delta_x);
 				int16_t xcenter = std::max<int16_t>(half_delta_x, std::min<int16_t>(latest_feedback.xcenter,
 				                                                                    original_resolution.width - half_delta_x));
-				bx = xcenter;
-				by = (ymax + ymin) / 2;
 
 				// Compute xmin and xmax, even though xcenter is clamped let's not take risks
 				xmin = std::max<int16_t>((int16_t) (xcenter - half_delta_x), 0);
@@ -103,12 +80,11 @@ namespace airpose_client {
 			if (need_reproj)
 				reproject_coord(xmin, ymin, xmax, ymax, original_resolution);
 
-				// One final check, we might need to take away 1 pixel due to rounding
-				delta_x = std::min<int16_t>(delta_x, original_resolution.width - xmin);
-				delta_y = std::min<int16_t>(delta_y, original_resolution.height - ymin);
+			bx = (xmax + xmin) / 2;
+			by = (ymax + ymin) / 2;
+//			ROS_INFO_STREAM("xmin: " << xmin << " xmax: " << xmax << " ymin: " << ymin << " ymax: " << ymax);
 
-				return cv::Rect(xmin, ymin, delta_x, delta_y);
-			}
+			return cv::Rect(xmin, ymin, xmax - xmin, ymax - ymin);
 		}
 
 		AirPoseClient::AirPoseClient(char *host, char *port) : host_{host}, port_{port} {
@@ -334,8 +310,7 @@ namespace airpose_client {
 
 				float bx, by;
 				// Create an auxiliary, custom projection object to aid in calculations
-				const auto crop_area = get_crop_area(latest_feedback_, original_resolution, desired_resolution, aspect_ratio,
-				                                     bx, by, timed_out);
+				const auto crop_area = get_crop_area(latest_feedback_, original_resolution, bx, by, timed_out);
 				if (crop_area.width == 0) {
 					ROS_WARN("No crop area found, skipping frame");
 					ROS_WARN_STREAM("Timeout is " << timed_out << " msgp " << msgp->header.seq << " latest_feedback "
@@ -520,7 +495,7 @@ namespace airpose_client {
 
 				// check if data for stage 1 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
-				if (getFrameNumber(first_msg_.header.stamp) != currentFrame) {
+				if (getFrameNumber(first_msg_.header.stamp + ros::Duration(0.5 * timing_camera)) != currentFrame) {
 //					ROS_INFO_STREAM("Current frame 1 " << currentFrame);
 //					ROS_INFO_STREAM("Current frame 2 " << getFrameNumber(first_msg_.header.stamp + ros::Duration(timing_camera * 0.5)) );
 					resetLoop(currentFrame);
@@ -573,7 +548,7 @@ namespace airpose_client {
 				// we are now in stage 3
 				// check if data for stage 2 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
-				if (getFrameNumber(second_msg_.header.stamp) != currentFrame) {
+				if (getFrameNumber(second_msg_.header.stamp  + ros::Duration(0.5 * timing_camera)) != currentFrame) {
 					resetLoop(currentFrame);
 					ROS_INFO_STREAM("Step 3 skip..");
 					continue;
