@@ -123,7 +123,7 @@ namespace airpose_client {
 			ROS_INFO_STREAM("robotID: " << robotID << " other_robotID: " << other_robotID);
 
 
-			std::string camera_info_topic{"camera/info"};
+			std::string camera_info_topic{"video/camera_info"};
 			pnh_.getParam("camera_info_topic", camera_info_topic);
 
 			std::string step1_topic_pub{"step1_pub"};
@@ -155,10 +155,19 @@ namespace airpose_client {
 			pnh_.getParam("timing/communication_stage3", timing_communication_stage3);
 
 			double fx, fy, cx, cy;
-			pnh_.getParam("network_camera_matrix/fx", fx);
-			pnh_.getParam("network_camera_matrix/fy", fy);
-			pnh_.getParam("network_camera_matrix/cx", cx);
-			pnh_.getParam("network_camera_matrix/cy", cy);
+			if (robotID == 1) {
+				pnh_.getParam("network_camera_matrix_1/fx", fx);
+				pnh_.getParam("network_camera_matrix_1/fy", fy);
+				pnh_.getParam("network_camera_matrix_1/cx", cx);
+				pnh_.getParam("network_camera_matrix_1/cy", cy);
+			} else if (robotID == 2) {
+				pnh_.getParam("network_camera_matrix_2/fx", fx);
+				pnh_.getParam("network_camera_matrix_2/fy", fy);
+				pnh_.getParam("network_camera_matrix_2/cx", cx);
+				pnh_.getParam("network_camera_matrix_2/cy", cy);
+			} else {
+				ROS_ERROR("NO CAM PARAM GIVEN for robotID %d", robotID);
+			}
 			airpose_camera_matrix_ = cv::Mat::eye(3, 3, CV_64F);
 			airpose_camera_matrix_.at<double>(0, 0) = fx;
 			airpose_camera_matrix_.at<double>(1, 1) = fy;

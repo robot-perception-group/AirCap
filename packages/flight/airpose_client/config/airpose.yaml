@@ -12,15 +12,21 @@ timing:
   communication_stage3: 0.05
 
 # I need fix
-network_camera_matrix:
-  fx: 3602.380733
-  fy: 3615.060635
-  cx: 1208.348894
-  cy: 992.675623
+network_camera_matrix_1:
+  fx: 1537.8309326171875
+  fy: 1517.6612548828125
+  cx: 1018.5463256835938
+  cy: 577.5239868164062
+
+network_camera_matrix_2:
+  fx: 1361.1070556640625
+  fy: 1378.796630859375
+  cx: 978.017578125
+  cy: 667.2257690429688
 
 score_threshold: 0.3
 desired_class: 15
-aspect_ratio: 1.333333333
+aspect_ratio: 0.75
 
 variance:
   x:
