@@ -17,6 +17,8 @@
     <arg name="max_update_force" default="false"/>
     <arg name="max_update_rate" default="1.0"/>
     <arg name="network_model" default="airpose.yaml"/>
+    <arg name="groundtruth" default="false"/>
+    <arg name="reproject" default="false"/>
 
     <group ns="$(arg namespace)">
         <arg name="name" value="airpose_client"/>
@@ -28,6 +30,8 @@
             <param name="feedback_topic" value="$(arg feedback_topic)" type="string"/>
             <param name="timeout_seconds" value="$(arg timeout_seconds)" type="double"/>
             <param name="border_dropoff" value="$(arg border_dropoff)" type="double"/>
+            <param name="groundtruth" value="$(arg groundtruth)" type="bool"/>
+            <param name="reproject" value="$(arg reproject)" type="bool"/>
 
             <param name="robotID" value="$(arg robotID)" type="int"/>
 

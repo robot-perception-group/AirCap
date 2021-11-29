@@ -66,7 +66,7 @@ namespace airpose_client {
 			int16_t ymax = std::min<int16_t>(latest_feedback.ymax, original_resolution.height);
 
 			// we have ground truth, so we can crop the image to the ground truth
-			if (latest_feedback.debug_included == true) {
+			if (has_groundtruth) {
 				// Clamp the values to resolution
 				int16_t xmin = std::max<int16_t>(latest_feedback.ycenter,
 				                                 0); // xcenter is not a typo, it is xmin in the gt data
@@ -97,8 +97,11 @@ namespace airpose_client {
 				by = (ymax + ymin) / 2;
 
 				// Compute xmin and xmax, even though xcenter is clamped let's not take risks
-				int16_t xmin = std::max<int16_t>((int16_t) (xcenter - half_delta_x), 0);
-				int16_t xmax = std::min<int16_t>((int16_t) (xcenter + half_delta_x), original_resolution.width);
+				xmin = std::max<int16_t>((int16_t) (xcenter - half_delta_x), 0);
+				xmax = std::min<int16_t>((int16_t) (xcenter + half_delta_x), original_resolution.width);
+			}
+			if (need_reproj)
+				reproject_coord(xmin, ymin, xmax, ymax, original_resolution);
 
 				// One final check, we might need to take away 1 pixel due to rounding
 				delta_x = std::min<int16_t>(delta_x, original_resolution.width - xmin);
@@ -122,6 +125,8 @@ namespace airpose_client {
 			int other_robotID = robotID == 1 ? 2 : 1;
 			ROS_INFO_STREAM("robotID: " << robotID << " other_robotID: " << other_robotID);
 
+			pnh_.getParam("groundtruth", has_groundtruth);
+			pnh_.getParam("reproject", need_reproj);
 
 			std::string camera_info_topic{"video/camera_info"};
 			pnh_.getParam("camera_info_topic", camera_info_topic);
@@ -173,7 +178,7 @@ namespace airpose_client {
 			airpose_camera_matrix_.at<double>(1, 1) = fy;
 			airpose_camera_matrix_.at<double>(0, 2) = cx;
 			airpose_camera_matrix_.at<double>(1, 2) = cy;
-//			ROS_INFO_STREAM(airpose_camera_matrix_);
+			ROS_INFO_STREAM(airpose_camera_matrix_);
 
 			timing_whole_sequence =
 				timing_network_stage1 + timing_network_stage2 + timing_network_stage3 + timing_communication_stage1 +
@@ -216,6 +221,7 @@ namespace airpose_client {
 			                              this);  // only need the most recent
 
 			// Img subscriber
+			ROS_INFO_STREAM("Subscribing to " << img_topic);
 			img_sub_ = it.subscribe(img_topic, 1, &AirPoseClient::imgCallback,
 			                        this); // queue of 1, we only want the latest image to be processed
 
@@ -225,7 +231,7 @@ namespace airpose_client {
 
 			step2_sub_ = nh_.subscribe(step2_topic_fb, 1, &AirPoseClient::step2Callback,
 			                           this); // queue of 1, we only want the latest msg to be processed
-
+			ROS_INFO_STREAM("Camera info topic " << camera_info_topic);
 			camera_info_sub_ = nh_.subscribe(camera_info_topic, 1, &AirPoseClient::cameraInfoCallback,
 			                                 this); // queue of 1, we only want the msg image to be processed
 		}
@@ -281,8 +287,10 @@ namespace airpose_client {
 				return;
 			}
 
+//			ROS_INFO_STREAM("Received image of size " << msgp->width << "x" << msgp->height);
 			// check current state. we are only interested in new images prior to stage 1:
 			if (timing_current_stage != 0) {
+//				ROS_WARN_STREAM("Not handling image, current stage is " << timing_current_stage);
 				return;
 			}
 
@@ -297,9 +305,6 @@ namespace airpose_client {
 				cv::flip(mat_img_, mat_img_, 1); //transpose+flip(1) = Rotate 90 CW
 #endif
 
-				//ROS_INFO("Parsing image...Calculate");
-				const cv::Size2i original_resolution(mat_img_.cols, mat_img_.rows);
-
 				bool timed_out{false};
 				if (msgp->header.stamp - latest_feedback_.header.stamp > timeout_) {
 					timed_out = true;
@@ -308,8 +313,7 @@ namespace airpose_client {
 					                           << latest_feedback_.header.stamp);
 				}
 //				ROS_INFO_STREAM("Latest feedback id " << latest_feedback_.header.seq << " timed out " << timed_out);
-
-				if (latest_feedback_.debug_included == true) {
+				if (has_groundtruth && !timed_out) {
 					// force skip if benchtest is active
 					if (latest_feedback_.header.seq != msgp->header.seq) {
 						timed_out = true;
@@ -317,11 +321,16 @@ namespace airpose_client {
 				}
 
 //				cv::imwrite("orig.png", mat_img_);
-//				// fixme reproject image if necessary
-//				reproject_image(mat_img_);
-//				cv::imwrite("reproj.png", mat_img_);
-//				ROS_INFO_STREAM(latest_feedback_.ymin << " " << latest_feedback_.ymax);
-//				cv::waitKey(0);
+				if (need_reproj) {
+					reproject_image(mat_img_);
+//					cv::imwrite("reproj.png", mat_img_);
+//					ros::Duration(10).sleep();
+					ROS_INFO_STREAM("Reprojected");
+				}
+
+				//ROS_INFO("Parsing image...Calculate");
+				// original_resolution is always updated after reprojection
+				const cv::Size2i original_resolution(mat_img_.cols, mat_img_.rows);
 
 				float bx, by;
 				// Create an auxiliary, custom projection object to aid in calculations
@@ -342,7 +351,9 @@ namespace airpose_client {
 
 				//ROS_INFO_STREAM("crop " << crop_area);
 				cv::Mat cropped = mat_img_(crop_area);
-				//ROS_INFO("Center %d,%d\tCrop %d\tOriginal res %d,%d", center.x, center.y, crop_length, original_resolution.width, original_resolution.height);
+//				cv::imwrite("cropped.png", cropped);
+
+//				ROS_INFO("Center %f,%f\t \tOriginal res %d,%d", bx, by, original_resolution.width, original_resolution.height);
 
 				//ROS_INFO("Parsing image...Resize");
 				// Resize to desired resolution with interpolation, using our allocated buffer
@@ -373,6 +384,7 @@ namespace airpose_client {
 				cv::copyMakeBorder(cropped, resized, fill_y, desired_resolution.height - cropped.rows - fill_y,
 				                   fill_x, desired_resolution.width - cropped.cols - fill_x, cv::BORDER_CONSTANT,
 				                   cv::Scalar(0, 0, 0));
+//				cv::imwrite("resized.png", resized);
 
 				if (camera_matrix_.at<double>(0, 2) != -1) {
 					send_data->bx = (float) (bx / camera_matrix_.at<double>(0, 2) - 1);
@@ -385,7 +397,7 @@ namespace airpose_client {
 				}
 				send_data->scale = scale;
 				send_data->state = 0;
-				ROS_INFO_STREAM("Image id " << msgp->header.seq << " feedback id: " << latest_feedback_.header.seq);
+//				ROS_INFO_STREAM("Image id " << msgp->header.seq << " feedback id: " << latest_feedback_.header.seq);
 //				ROS_INFO_STREAM("IMAGE " << std::setprecision(15) << msgp->header.seq << " bx " << send_data->bx << " by " << send_data->by << " scale "
 //				                         << send_data->scale << " cx " << camera_matrix_.at<double>(0,2) << " cy " << camera_matrix_.at<double>(1,2));
 				c_->write_bytes(buffer_send_.get(), sizeof(first_message) + length_final_img_, boost::posix_time::seconds(10));
@@ -447,6 +459,7 @@ namespace airpose_client {
 
 		void AirPoseClient::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &msg) {
 			camera_matrix_ = cv::Mat(3, 3, CV_64F, (void *) msg->K.data());
+			ROS_INFO_STREAM("Camera info received");
 //			dist_coeffs_ = cv::Mat(1, 5, CV_64F, (void *) msg->D.data());
 		}
 

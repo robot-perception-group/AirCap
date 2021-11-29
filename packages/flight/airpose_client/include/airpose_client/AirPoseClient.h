@@ -65,6 +65,8 @@ namespace airpose_client {
 
 				cv::Mat camera_matrix_;
 
+				bool has_groundtruth{false}, need_reproj{false};
+
 				// Connect to TCP server (NN)
 				bool connect();
 
