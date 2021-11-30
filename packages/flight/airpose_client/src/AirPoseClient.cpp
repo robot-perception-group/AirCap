@@ -55,12 +55,10 @@ namespace airpose_client {
 			// we have ground truth, so we can crop the image to the ground truth
 			if (has_groundtruth) {
 				// Clamp the values to resolution
-				int16_t xmin = std::max<int16_t>(latest_feedback.ycenter,
-				                                 0); // xcenter is not a typo, it is xmin in the gt data
-				int16_t xmax = std::min<int16_t>(latest_feedback.xcenter,
-				                                 original_resolution.width); // ycenter is not a typo, it is xmax in the gt data
+				xmin = std::max<int16_t>(latest_feedback.ycenter, 0); // xcenter is not a typo, it is xmin in the gt data
+				xmax = std::min<int16_t>(latest_feedback.xcenter, original_resolution.width); // ycenter is not a typo, it is xmax in the gt data
 			}
-			// we have no ground truth, so we need to crop the image to the desired resolution
+				// we have no ground truth, so we need to crop the image to the desired resolution
 			else {
 
 				// Given the aspect ratio that the NN wants, obtain x values
@@ -189,7 +187,7 @@ namespace airpose_client {
 			// Publisher of step2 feedback
 			step2_pub_ = nh_.advertise<airpose_client::AirposeNetworkData>(step2_topic_pub, 5);
 			// Publisher of step3 feedback (the actual result)
-			step3_pub_ = nh_.advertise<airpose_client::AirposeNetworkData>(step3_topic_pub, 5);
+			step3_pub_ = nh_.advertise<airpose_client::AirposeNetworkResult>(step3_topic_pub, 5);
 
 			// Image transport interface
 			image_transport::ImageTransport it(nh_);
@@ -320,10 +318,9 @@ namespace airpose_client {
 //					                              << latest_feedback_.header.seq);
 					// todo check what to do in this case
 					return;
-				}
-				else if (crop_area.height * crop_area.width < min_area_) {
+				} else if (crop_area.height * crop_area.width < min_area_) {
 					ROS_WARN("Very small area, skipping frame");
-        }
+				}
 
 				// we accepted a frame, advancing stage
 				timing_current_stage = 1;
@@ -554,7 +551,7 @@ namespace airpose_client {
 				// we are now in stage 3
 				// check if data for stage 2 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
-				if (getFrameNumber(second_msg_.header.stamp  + ros::Duration(0.5 * timing_camera)) != currentFrame) {
+				if (getFrameNumber(second_msg_.header.stamp + ros::Duration(0.5 * timing_camera)) != currentFrame) {
 					resetLoop(currentFrame);
 					ROS_INFO_STREAM("Step 3 skip..");
 					continue;
@@ -575,6 +572,14 @@ namespace airpose_client {
 
 					c_->read_bytes((uint8_t *) &network_result_msg.data[0], sizeof(network_result_msg.data),
 					               boost::posix_time::seconds(1));
+
+					cv_bridge::CvImage img_bridge;
+					std_msgs::Header header; // empty header
+					header.stamp = network_result_msg.header.stamp; // time
+					header.frame_id = network_result_msg.header.frame_id; // id
+					img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, mat_img_);
+					img_bridge.toImageMsg(network_result_msg.img); // from cv_bridge to sensor_msgs::Image
+
 					//PUBLISH DATA TO THE WORLD
 					step3_pub_.publish(network_result_msg);
 				}
