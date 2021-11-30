@@ -270,7 +270,7 @@ namespace airpose_client {
 //				ROS_WARN_STREAM("Not handling image, current stage is " << timing_current_stage);
 				return;
 			}
-			uint32_t frameID = (uint32_t) timing_current_frame_id;
+			uint64_t frameID = (uint64_t) timing_current_frame_id;
 
 			//ROS_INFO("Callback called for image seq %d", msgp->header.seq);
 
@@ -390,7 +390,7 @@ namespace airpose_client {
 				airpose_client::AirposeNetworkData network_data_msg;
 				// Header is the same as img msg
 				network_data_msg.header.frame_id = msgp->header.frame_id;
-				network_data_msg.header.seq = frameID;
+				network_data_msg.frame_id = frameID;
 				network_data_msg.header.stamp = msgp->header.stamp;
 
 				// Block while waiting for reply
@@ -505,7 +505,7 @@ namespace airpose_client {
 
 				// check if data for stage 1 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
-				if (first_msg_.header.seq != (uint32_t) timing_current_frame_id) {
+				if (first_msg_.frame_id != (uint64_t) timing_current_frame_id) {
 //					ROS_INFO_STREAM("Current frame 1 " << currentFrame);
 //					ROS_INFO_STREAM("Current frame 2 " << getFrameNumber(first_msg_.header.stamp + ros::Duration(timing_camera * 0.5)) );
 					resetLoop(timing_current_frame_id);
@@ -525,7 +525,7 @@ namespace airpose_client {
 
 					airpose_client::AirposeNetworkData network_data_msg;
 					network_data_msg.header.frame_id = first_msg_.header.frame_id;
-					network_data_msg.header.seq = first_msg_.header.seq;
+					network_data_msg.frame_id = first_msg_.frame_id;
 					network_data_msg.header.stamp = timing_current_frame_time;
 
 					c_->read_bytes((uint8_t *) &network_data_msg.data[0], sizeof(network_data_msg.data),
@@ -559,7 +559,7 @@ namespace airpose_client {
 				// we are now in stage 3
 				// check if data for stage 2 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
-				if (second_msg_.header.seq != (uint32_t) timing_current_frame_id) {
+				if (second_msg_.frame_id != (uint64_t) timing_current_frame_id) {
 					resetLoop(timing_current_frame_id);
 					ROS_INFO_STREAM("Step 3 skip..");
 					continue;
@@ -576,7 +576,7 @@ namespace airpose_client {
 
 					airpose_client::AirposeNetworkResult network_result_msg;
 					network_result_msg.header.frame_id = second_msg_.header.frame_id;
-					network_result_msg.header.seq = second_msg_.header.seq;
+					network_result_msg.frame_id = second_msg_.frame_id;
 					network_result_msg.header.stamp = timing_current_frame_time;
 
 					c_->read_bytes((uint8_t *) &network_result_msg.data[0], sizeof(network_result_msg.data),
