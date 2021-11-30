@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
 PROJECT(airpose_client)
 
 IF(NOT CMAKE_BUILD_TYPE)
@@ -108,6 +108,7 @@ GENERATE_MESSAGES(
    DEPENDENCIES
    std_msgs
    airpose_client
+   sensor_msgs
 )
 
 
@@ -146,7 +147,7 @@ GENERATE_MESSAGES(
 CATKIN_PACKAGE(
   INCLUDE_DIRS include
   # LIBRARIES NNClient
-  CATKIN_DEPENDS message_runtime std_msgs
+  CATKIN_DEPENDS message_runtime std_msgs sensor_msgs
   #  DEPENDS system_lib
 )
 
