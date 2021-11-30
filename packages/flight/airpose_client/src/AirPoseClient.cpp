@@ -54,6 +54,7 @@ namespace airpose_client {
 
 			// we have ground truth, so we can crop the image to the ground truth
 			if (has_groundtruth) {
+				ROS_INFO_STREAM("Using ground truth");
 				// Clamp the values to resolution
 				xmin = std::max<int16_t>(latest_feedback.ycenter, 0); // xcenter is not a typo, it is xmin in the gt data
 				xmax = std::min<int16_t>(latest_feedback.xcenter, original_resolution.width); // ycenter is not a typo, it is xmax in the gt data
@@ -104,6 +105,7 @@ namespace airpose_client {
 
 			std::string camera_info_topic{"video/camera_info"};
 			pnh_.getParam("camera_info_topic", camera_info_topic);
+			camera_matrix_ = cv::Mat::eye(3, 3, CV_64F) * -1;
 
 			std::string step1_topic_pub{"step1_pub"};
 			pnh_.getParam("step1_topic_pub", step1_topic_pub);
@@ -155,7 +157,7 @@ namespace airpose_client {
 			airpose_camera_matrix_.at<double>(1, 1) = fy;
 			airpose_camera_matrix_.at<double>(0, 2) = cx;
 			airpose_camera_matrix_.at<double>(1, 2) = cy;
-			ROS_INFO_STREAM(airpose_camera_matrix_);
+//			ROS_INFO_STREAM(airpose_camera_matrix_);
 
 			timing_whole_sequence =
 				timing_network_stage1 + timing_network_stage2 + timing_network_stage3 + timing_communication_stage1 +
@@ -211,6 +213,7 @@ namespace airpose_client {
 			ROS_INFO_STREAM("Camera info topic " << camera_info_topic);
 			camera_info_sub_ = nh_.subscribe(camera_info_topic, 1, &AirPoseClient::cameraInfoCallback,
 			                                 this); // queue of 1, we only want the msg image to be processed
+      seq = -1;
 		}
 
 		bool AirPoseClient::connectMultiple(ros::Rate sleeper, int tries) {
@@ -282,6 +285,7 @@ namespace airpose_client {
 			try {
 				//ROS_INFO("Parsing image...Update cv::mat object");
 				cv::Mat local_mat_img_ = cv_bridge::toCvShare(msgp, "bgr8")->image;
+				seq = msgp->header.seq;
 
 #ifdef DEBUG_ROTATE_IMAGE_90_CW
 				cv::transpose(local_mat_img_, local_mat_img_);
@@ -375,7 +379,9 @@ namespace airpose_client {
 					send_data->by = (float) (by / camera_matrix_.at<double>(1, 2) - 1);
 				} else {
 					// fixme or skip frame
-					ROS_INFO_STREAM("Camera info message not yet received, using PINHOLE model!!!");
+					ROS_INFO_STREAM("Skipping frame, missing camera info");
+					timing_current_stage -= 1;
+					return;
 					send_data->bx = (bx - msgp->width / 2.0) / (msgp->width / 2.0);
 					send_data->by = (by - msgp->height / 2.0) / (msgp->height / 2.0);
 				}
@@ -447,7 +453,7 @@ namespace airpose_client {
 
 		void AirPoseClient::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &msg) {
 			camera_matrix_ = cv::Mat(3, 3, CV_64F, (void *) msg->K.data());
-			ROS_INFO_STREAM("Camera info received");
+//			ROS_INFO_STREAM("Camera info received");
 //			dist_coeffs_ = cv::Mat(1, 5, CV_64F, (void *) msg->D.data());
 		}
 
@@ -509,8 +515,7 @@ namespace airpose_client {
 				// check if data for stage 1 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
 				if (first_msg_.frame_id != (uint64_t) timing_current_frame_id) {
-//					ROS_INFO_STREAM("Current frame 1 " << currentFrame);
-//					ROS_INFO_STREAM("Current frame 2 " << getFrameNumber(first_msg_.header.stamp + ros::Duration(timing_camera * 0.5)) );
+					ROS_INFO_STREAM("Current frame 1 " << first_msg_.header.seq << " != " << timing_current_frame_id);
 					resetLoop(timing_current_frame_id);
 					ROS_INFO_STREAM("Step 2 skip..");
 					continue;
@@ -588,9 +593,10 @@ namespace airpose_client {
 					cv_bridge::CvImage img_bridge;
 					std_msgs::Header header; // empty header
 					header.stamp = network_result_msg.header.stamp; // time
-					header.frame_id = network_result_msg.header.frame_id; // id
+					header.frame_id = std::to_string(seq); // id
 					img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, mat_img_);
 					img_bridge.toImageMsg(network_result_msg.img); // from cv_bridge to sensor_msgs::Image
+					network_result_msg.header.frame_id = std::to_string(seq); // id
 
 					//PUBLISH DATA TO THE WORLD
 					step3_pub_.publish(network_result_msg);

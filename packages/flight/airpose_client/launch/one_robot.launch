@@ -8,6 +8,7 @@
     <arg name="port" default="9900"/>
 
     <arg name="img_topic" default="video"/> <!-- camera/image_raw -->
+    <arg name="camera_info_topic" default="info"/> <!-- camera/image_raw -->
     <arg name="detections_topic" default="object_detections"/>
 
     <arg name="timeout_seconds" default="1"/>
@@ -26,6 +27,7 @@
               args="$(arg host) $(arg port)">
             <rosparam command="load" file="$(find airpose_client)/config/$(arg network_model)"/>
             <param name="img_topic" value="$(arg img_topic)" type="string"/>
+            <param name="camera_info_topic" value="$(arg camera_info_topic)" type="string"/>
             <param name="detections_topic" value="$(arg detections_topic)" type="string"/>
             <param name="feedback_topic" value="$(arg feedback_topic)" type="string"/>
             <param name="timeout_seconds" value="$(arg timeout_seconds)" type="double"/>
