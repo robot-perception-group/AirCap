@@ -36,6 +36,8 @@ namespace airpose_client {
 
 		class AirPoseClient {
 		private:
+
+				const double epsilon{1e-3};
 				/*std::unique_ptr<first_message> first_msg_;
 				std::unique_ptr<second_message> second_msg_;
 				std::unique_ptr<third_message> third_msg_;*/
@@ -100,6 +102,7 @@ namespace airpose_client {
 				double timing_whole_sequence{999.9};
 				ros::Time timing_next_wakeup{0};
 				ros::Time timing_current_frame_time;
+				volatile uint64_t timing_current_frame_id;
 				volatile int timing_current_stage{-1};
 
 				bool max_update_force{false};
