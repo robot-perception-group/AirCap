@@ -65,6 +65,18 @@ smplx.eval()
 vis = meshcat.Visualizer()
 
 meshname = topic.split("/")[1]
+colorlist = [0x440154,
+ 0x482475,
+ 0x414487,
+ 0x355f8d,
+ 0x2a788e,
+ 0x21918c,
+ 0x22a884,
+ 0x44bf70,
+ 0x7ad151,
+ 0xbddf26]
+
+clr = colorlist[int(meshname.split("_")[-1])]
 
 def callback(data):
     betas = torch.from_numpy(np.array(data.data[:10])).to(device).float().unsqueeze(0)
@@ -84,7 +96,7 @@ def callback(data):
 
     vis[meshname].set_object(g.TriangularMeshGeometry(verts[0].detach().cpu().numpy(),smplx.faces),
                         g.MeshLambertMaterial(
-                             color=0xff22dd,
+                             color=clr,
                              reflectivity=0.8))
 
 
