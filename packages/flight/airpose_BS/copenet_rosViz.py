@@ -2,8 +2,8 @@ import rospy
 import sys
 import torch
 import numpy as np
-# from airpose.msg import AirposeNetworkResult
-from std_msgs.msg import Float32MultiArray
+from airpose_client.msg import AirposeNetworkResult
+# from std_msgs.msg import Float32MultiArray
 import torch.nn.functional as F
 from smplx import SMPLX
 import meshcat
@@ -88,6 +88,6 @@ def callback(data):
                              reflectivity=0.8))
 
 
-rospy.Subscriber(topic, Float32MultiArray, callback)
+rospy.Subscriber(topic, AirposeNetworkResult, callback)
 
 rospy.spin()
