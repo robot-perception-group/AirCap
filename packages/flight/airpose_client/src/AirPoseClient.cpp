@@ -593,18 +593,18 @@ namespace airpose_client {
 					c_->read_bytes((uint8_t *) &network_result_msg.data[0], sizeof(network_result_msg.data),
 					               boost::posix_time::seconds(1));
 
-//					try {
-//						cv_bridge::CvImage img_bridge;
-//						std_msgs::Header header; // empty header
-//						header.stamp = network_result_msg.header.stamp; // time
-//						header.frame_id = std::to_string(seq); // id
-//						img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, mat_img_);
-//						img_bridge.toImageMsg(network_result_msg.img); // from cv_bridge to sensor_msgs::Image
-//					}
-//					catch (cv_bridge::Exception &e) {
-//						ROS_ERROR("cv_bridge exception: %s", e.what());
+					try {
+						cv_bridge::CvImage img_bridge;
+						std_msgs::Header header; // empty header
+						header.stamp = network_result_msg.header.stamp; // time
+						header.frame_id = std::to_string(seq); // id
+						img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, mat_img_);
+						img_bridge.toImageMsg(network_result_msg.img); // from cv_bridge to sensor_msgs::Image
+					}
+					catch (cv_bridge::Exception &e) {
+						ROS_ERROR_STREAM("cv_bridge exception: %s" << e.what());
 //						network_result_msg.img = sensor_msgs::Image();
-//					}
+					}
 					network_result_msg.header.frame_id = std::to_string(seq); // id
 
 					//PUBLISH DATA TO THE WORLD
