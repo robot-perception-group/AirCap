@@ -51,6 +51,7 @@ namespace airpose_client {
 				cv::Mat mat_img_;
 				std::string host_, port_;
 				size_t length_final_img_;
+				int seq;
 				std::unique_ptr<uint8_t[]> buffer_send_; // will automatically delete when out of scope
 				std::unique_ptr<second_and_third_message> buffer_send_msg; // will automatically delete when out of scope
 				ros::Publisher step1_pub_, step2_pub_, step3_pub_;

@@ -56,7 +56,7 @@ rospy.init_node("AirPoseViz", anonymous=True)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-smplx = SMPLX("/is/ps3/nsaini/projects/copenet_real/src/copenet_real/data/smplx/models/smplx",
+smplx = SMPLX("/home/ebonetto/Desktop/smplx",
                          batch_size=1,
                          create_transl=False).to(device)
 smplx.eval()

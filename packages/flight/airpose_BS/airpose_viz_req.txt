@@ -1,5 +1,5 @@
 catkin-pkg==0.4.24
-dataclasses==0.8
+dataclasses
 distro==1.6.0
 meshcat==0.3.2
 Pillow==8.4.0
