@@ -5,7 +5,7 @@ desired_resolution:
 min_area: 50 # this will be squared in the code
 
 timing:
-  camera: 0.1
+  camera: 0.08
   network_stage1: 0.025
   network_stage2: 0.0025
   network_stage3: 0.0025
@@ -13,7 +13,6 @@ timing:
   communication_stage2: 0.025
 #  communication_stage3: 0.05
 
-# I need fix
 network_camera_matrix_1:
   fx: 1537.8309326171875
   fy: 1517.6612548828125
