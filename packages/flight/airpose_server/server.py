@@ -95,7 +95,8 @@ def process(data,metainfo,stage):
         frame = (torch.from_numpy(npimg).view((SIZE,SIZE,3)).to(device).permute(2,0,1).unsqueeze(0).float() * (1.0/255))
         frame.sub_(mean[:,None,None]).div_(std[:,None,None])
         
-        pose, shape = model.forward_reg(xf0 = model.forward_feat_ext(frame),
+        xf = model.forward_feat_ext(frame)
+        pose, shape = model.forward_reg(xf0 = xf,
                                     bb0 = bb,
                                     pred_position0 = torch.Tensor([[0,0,0.5]]).to(device).float(),
                                     pred_orient0 = model.init_pose[:,:6],
