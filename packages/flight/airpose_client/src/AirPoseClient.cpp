@@ -281,11 +281,11 @@ namespace airpose_client {
 
 			try {
 				//ROS_INFO("Parsing image...Update cv::mat object");
-				mat_img_ = cv_bridge::toCvShare(msgp, "bgr8")->image;
+				cv::Mat local_mat_img_ = cv_bridge::toCvShare(msgp, "bgr8")->image;
 
 #ifdef DEBUG_ROTATE_IMAGE_90_CW
-				cv::transpose(mat_img_, mat_img_);
-				cv::flip(mat_img_, mat_img_, 1); //transpose+flip(1) = Rotate 90 CW
+				cv::transpose(local_mat_img_, local_mat_img_);
+				cv::flip(local_mat_img_, local_mat_img_, 1); //transpose+flip(1) = Rotate 90 CW
 #endif
 
 				bool timed_out{false};
@@ -303,17 +303,17 @@ namespace airpose_client {
 					}
 				}
 
-//				cv::imwrite("orig.png", mat_img_);
+//				cv::imwrite("orig.png", local_mat_img_);
 				if (need_reproj) {
-					reproject_image(mat_img_);
-//					cv::imwrite("reproj.png", mat_img_);
+					reproject_image(local_mat_img_);
+//					cv::imwrite("reproj.png", local_mat_img_);
 //					ros::Duration(10).sleep();
 					ROS_INFO_STREAM("Reprojected");
 				}
 
 				//ROS_INFO("Parsing image...Calculate");
 				// original_resolution is always updated after reprojection
-				const cv::Size2i original_resolution(mat_img_.cols, mat_img_.rows);
+				const cv::Size2i original_resolution(local_mat_img_.cols, local_mat_img_.rows);
 
 				float bx, by;
 				// Create an auxiliary, custom projection object to aid in calculations
@@ -334,7 +334,7 @@ namespace airpose_client {
 
 
 				//ROS_INFO_STREAM("crop " << crop_area);
-				cv::Mat cropped = mat_img_(crop_area);
+				cv::Mat cropped = local_mat_img_(crop_area);
 //				cv::imwrite("cropped.png", cropped);
 
 //				ROS_INFO("Center %f,%f\t \tOriginal res %d,%d", bx, by, original_resolution.width, original_resolution.height);
@@ -406,6 +406,9 @@ namespace airpose_client {
 				// IMPORTANT - the network finished executing - advancing sequencer
 				timing_current_stage = 2;
 				step1_pub_.publish(network_data_msg);
+
+				// do this after, since expensive (slow)
+				mat_img_ = cv_bridge::toCvCopy(msgp, "bgr8")->image;
 			}
 			catch (std::exception &e) {
 				ROS_WARN("Exception: %s", e.what());
