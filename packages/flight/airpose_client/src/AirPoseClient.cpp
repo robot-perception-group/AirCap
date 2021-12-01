@@ -57,7 +57,8 @@ namespace airpose_client {
 				ROS_INFO_STREAM("Using ground truth");
 				// Clamp the values to resolution
 				xmin = std::max<int16_t>(latest_feedback.ycenter, 0); // xcenter is not a typo, it is xmin in the gt data
-				xmax = std::min<int16_t>(latest_feedback.xcenter, original_resolution.width); // ycenter is not a typo, it is xmax in the gt data
+				xmax = std::min<int16_t>(latest_feedback.xcenter,
+				                         original_resolution.width); // ycenter is not a typo, it is xmax in the gt data
 			}
 				// we have no ground truth, so we need to crop the image to the desired resolution
 			else {
@@ -79,8 +80,8 @@ namespace airpose_client {
 			if (need_reproj)
 				reproject_coord(xmin, ymin, xmax, ymax, original_resolution);
 
-			bx = (xmax + xmin) / 2;
-			by = (ymax + ymin) / 2;
+			bx = (xmax + xmin) / 2.0;
+			by = (ymax + ymin) / 2.0;
 //			ROS_INFO_STREAM("xmin: " << xmin << " xmax: " << xmax << " ymin: " << ymin << " ymax: " << ymax);
 
 			return cv::Rect(xmin, ymin, xmax - xmin, ymax - ymin);
@@ -94,6 +95,7 @@ namespace airpose_client {
 
 			std::string feedback_topic{"object_detections/feedback"};
 			pnh_.getParam("feedback_topic", feedback_topic);
+			ROS_INFO_STREAM("feedback_topic: " << feedback_topic);
 
 			int robotID;
 			pnh_.getParam("robotID", robotID);
@@ -213,7 +215,7 @@ namespace airpose_client {
 			ROS_INFO_STREAM("Camera info topic " << camera_info_topic);
 			camera_info_sub_ = nh_.subscribe(camera_info_topic, 1, &AirPoseClient::cameraInfoCallback,
 			                                 this); // queue of 1, we only want the msg image to be processed
-      seq = -1;
+			seq = -1;
 		}
 
 		bool AirPoseClient::connectMultiple(ros::Rate sleeper, int tries) {
@@ -277,8 +279,9 @@ namespace airpose_client {
 
 			//ROS_INFO("Callback called for image seq %d", msgp->header.seq);
 
-			if ( ros::Time::now() - msgp->header.stamp >= ros::Duration(2.0 * timing_camera) ) {
-				ROS_WARN_STREAM("WARNING: Camera runs at " << 1.0/timing_camera << "fps, but we received an image 2 or more frames outdated. Can't synchronize this!\n");
+			if (ros::Time::now() - msgp->header.stamp >= ros::Duration(2.0 * timing_camera)) {
+				ROS_WARN_STREAM("WARNING: Camera runs at " << 1.0 / timing_camera
+				                                           << "fps, but we received an image 2 or more frames outdated. Can't synchronize this!\n");
 				return;
 			}
 
@@ -295,9 +298,9 @@ namespace airpose_client {
 				bool timed_out{false};
 				if (msgp->header.stamp - latest_feedback_.header.stamp > timeout_) {
 					timed_out = true;
-					ROS_INFO_STREAM_THROTTLE(0.5, "Skipping frame " << msgp->header.stamp - latest_feedback_.header.stamp);
-					ROS_INFO_STREAM("Timeout " << timeout_ << " msgp " << msgp->header.stamp << " latest_feedback "
-					                           << latest_feedback_.header.stamp);
+//					ROS_INFO_STREAM_THROTTLE(0.5, "Skipping frame " << msgp->header.stamp - latest_feedback_.header.stamp);
+//					ROS_INFO_STREAM("Timeout " << timeout_ << " msgp " << msgp->header.stamp << " latest_feedback "
+//					                           << latest_feedback_.header.stamp);
 				}
 //				ROS_INFO_STREAM("Latest feedback id " << latest_feedback_.header.seq << " timed out " << timed_out);
 				if (has_groundtruth && !timed_out) {
@@ -477,7 +480,7 @@ namespace airpose_client {
 			timing_next_wakeup = getFrameTime(FrameNumber + 1);
 			sleep_until(timing_next_wakeup);
 			timing_current_stage = 0;
-			timing_current_frame_id  = getFrameNumber(ros::Time::now() + ros::Duration(epsilon));
+			timing_current_frame_id = getFrameNumber(ros::Time::now() + ros::Duration(epsilon));
 		}
 
 		void AirPoseClient::mainLoop(void) {
@@ -515,7 +518,7 @@ namespace airpose_client {
 				// check if data for stage 1 has been received from other copter
 				// if it was received the subscribers wrote it in the respective objects
 				if (first_msg_.frame_id != (uint64_t) timing_current_frame_id) {
-					ROS_INFO_STREAM("Current frame 1 " << first_msg_.header.seq << " != " << timing_current_frame_id);
+					ROS_INFO_STREAM("Current frame 1 " << first_msg_.frame_id << " != " << timing_current_frame_id);
 					resetLoop(timing_current_frame_id);
 					ROS_INFO_STREAM("Step 2 skip..");
 					continue;
@@ -590,12 +593,18 @@ namespace airpose_client {
 					c_->read_bytes((uint8_t *) &network_result_msg.data[0], sizeof(network_result_msg.data),
 					               boost::posix_time::seconds(1));
 
-					cv_bridge::CvImage img_bridge;
-					std_msgs::Header header; // empty header
-					header.stamp = network_result_msg.header.stamp; // time
-					header.frame_id = std::to_string(seq); // id
-					img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, mat_img_);
-					img_bridge.toImageMsg(network_result_msg.img); // from cv_bridge to sensor_msgs::Image
+//					try {
+//						cv_bridge::CvImage img_bridge;
+//						std_msgs::Header header; // empty header
+//						header.stamp = network_result_msg.header.stamp; // time
+//						header.frame_id = std::to_string(seq); // id
+//						img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, mat_img_);
+//						img_bridge.toImageMsg(network_result_msg.img); // from cv_bridge to sensor_msgs::Image
+//					}
+//					catch (cv_bridge::Exception &e) {
+//						ROS_ERROR("cv_bridge exception: %s", e.what());
+//						network_result_msg.img = sensor_msgs::Image();
+//					}
 					network_result_msg.header.frame_id = std::to_string(seq); // id
 
 					//PUBLISH DATA TO THE WORLD
