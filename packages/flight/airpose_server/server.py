@@ -17,7 +17,7 @@ def fix_state_dict(old_state_dict):
     #state dicts created with DataParallel or DistributedDataParallel have a prefix to all keys
     new_state_dict = OrderedDict()
     for k,v in old_state_dict.items():
-        k2 = re.sub('^model\.','',k) 
+        k2 = re.sub('^model\.','',k)
         new_state_dict[k2] = v
     return new_state_dict
 
@@ -57,7 +57,7 @@ if (SPEEDUP==2):
     model=tracedmodel
 
 try:
-    model.load_state_dict( fix_state_dict(torch.load(MODEL,map_location=device)),strict=False)
+    model.load_state_dict( fix_state_dict(torch.load(MODEL,map_location=device)["state_dict"]),strict=False)
 except:
     print("!!!!                  !!!!!!!!!!!!!!!!                                           !!!!");
     print("!!!! Training snapshot failed to load, starting uninitialized for time benchmark !!!!");
@@ -89,10 +89,12 @@ def process(data,metainfo,stage):
     if stage==0:
         print("Received data for stage {}".format(stage)) 
         bb=torch.from_numpy(np.frombuffer(data,dtype=np.float32,count=3,offset=1)).unsqueeze(0).float().to(device)
-        npimg=np.frombuffer(data,dtype=np.uint8,count=(SIZE*SIZE*3),offset=1+3)
-
+        # npimg=cv2.imdecode(np.frombuffer(data, np.uint8,count=(SIZE*SIZE*3),offset=1+3), -1)
+        npimg=np.frombuffer(data,dtype=np.uint8,count=(SIZE*SIZE*3),offset=1+3*4)
+        npimg=np.reshape(npimg,(SIZE,SIZE,3))[:,:,[2,1,0]]
+        npimg=npimg.transpose(2,0,1)
         # normalization used for torchvision pretrained models
-        frame = (torch.from_numpy(npimg).view((SIZE,SIZE,3)).to(device).permute(2,0,1).unsqueeze(0).float() * (1.0/255))
+        frame = (torch.from_numpy(npimg).to(device).unsqueeze(0).float() * (1.0/255))
         frame.sub_(mean[:,None,None]).div_(std[:,None,None])
         
         xf = model.forward_feat_ext(frame)
