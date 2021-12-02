@@ -19,7 +19,7 @@
     <arg name="max_update_rate" default="1.0"/>
     <arg name="network_model" default="airpose.yaml"/>
     <arg name="groundtruth" default="false"/>
-    <arg name="reproject" default="false"/>
+    <arg name="reproject" default="true"/>
 
     <group ns="$(arg namespace)">
         <arg name="name" value="airpose_client"/>

@@ -385,8 +385,6 @@ namespace airpose_client {
 					ROS_INFO_STREAM("Skipping frame, missing camera info");
 					timing_current_stage -= 1;
 					return;
-					send_data->bx = (bx - msgp->width / 2.0) / (msgp->width / 2.0);
-					send_data->by = (by - msgp->height / 2.0) / (msgp->height / 2.0);
 				}
 				send_data->scale = scale;
 				send_data->state = 0;
@@ -414,6 +412,17 @@ namespace airpose_client {
 
 				// IMPORTANT - the network finished executing - advancing sequencer
 				timing_current_stage = 2;
+				network_data_msg.p_vector[0] = send_data->bx;
+				network_data_msg.p_vector[1] = send_data->by;
+				network_data_msg.p_vector[2] = send_data->scale;
+
+				network_data_msg.bb_vector[0] = crop_area.x;
+				network_data_msg.bb_vector[1] = crop_area.y;
+				network_data_msg.bb_vector[2] = crop_area.height;
+				network_data_msg.bb_vector[3] = crop_area.width;
+
+				network_data_msg.detector_feedback_stamp = latest_feedback_.header.stamp;
+
 				step1_pub_.publish(network_data_msg);
 
 				// do this after, since expensive (slow)
@@ -593,18 +602,17 @@ namespace airpose_client {
 					c_->read_bytes((uint8_t *) &network_result_msg.data[0], sizeof(network_result_msg.data),
 					               boost::posix_time::seconds(1));
 
-					try {
-						cv_bridge::CvImage img_bridge;
-						std_msgs::Header header; // empty header
-						header.stamp = network_result_msg.header.stamp; // time
-						header.frame_id = std::to_string(seq); // id
-						img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, mat_img_);
-						img_bridge.toImageMsg(network_result_msg.img); // from cv_bridge to sensor_msgs::Image
-					}
-					catch (cv_bridge::Exception &e) {
-						ROS_ERROR_STREAM("cv_bridge exception: %s" << e.what());
-//						network_result_msg.img = sensor_msgs::Image();
-					}
+//					try {
+//						cv_bridge::CvImage img_bridge;
+//						std_msgs::Header header; // empty header
+//						header.stamp = network_result_msg.header.stamp; // time
+//						header.frame_id = std::to_string(seq); // id
+//						img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, mat_img_);
+//						img_bridge.toImageMsg(network_result_msg.img); // from cv_bridge to sensor_msgs::Image
+//					}
+//					catch (cv_bridge::Exception &e) {
+//						ROS_ERROR_STREAM("cv_bridge exception: %s" << e.what());
+//					}
 					network_result_msg.header.frame_id = std::to_string(seq); // id
 
 					//PUBLISH DATA TO THE WORLD
