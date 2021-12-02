@@ -61,6 +61,8 @@ echo "starting swarm sensor fusion..."
 screen -d -m -S SENSORFUSION bash -i -c ./sensorfusion.sh
 echo "starting visual detection..."
 screen -d -m -S DETECTION bash -i -c ./detection.sh
+echo "starting airpose..."
+screen -d -m -S AIRPOSE bash -i -c ./airpose.sh
 
 echo "starting navigation..."
 screen -d -m -S NMPC_PLANNER bash -i -c ./navigation.sh
