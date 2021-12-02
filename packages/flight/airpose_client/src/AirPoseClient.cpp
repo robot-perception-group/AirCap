@@ -324,15 +324,16 @@ namespace airpose_client {
 
 				float bx, by;
 				// Create an auxiliary, custom projection object to aid in calculations
-				const auto crop_area = get_crop_area(latest_feedback_, original_resolution, bx, by, timed_out);
-				if (crop_area.width == 0) {
-					ROS_WARN("No crop area found, skipping frame");
-//					ROS_WARN_STREAM("Timeout is " << timed_out << " msgp " << msgp->header.seq << " latest_feedback "
-//					                              << latest_feedback_.header.seq);
-					// todo check what to do in this case
-					return;
-				} else if (crop_area.height * crop_area.width < min_area_) {
-					ROS_WARN("Very small area, skipping frame");
+				 auto crop_area = get_crop_area(latest_feedback_, original_resolution, bx, by, timed_out);
+				if (crop_area.width == 0 or crop_area.height * crop_area.width < min_area_) {
+					ROS_WARN("Very small area, FULL frame");
+					
+					latest_feedback_.xcenter = camera_matrix_.at<double>(0,2);
+					latest_feedback_.ycenter = camera_matrix_.at<double>(1,2);
+					latest_feedback_.ymin = 0;
+					latest_feedback_.ymax = local_mat_img_.rows;
+					
+					crop_area = get_crop_area(latest_feedback_, original_resolution, bx, by, timed_out);
 				}
 
 				// we accepted a frame, advancing stage
