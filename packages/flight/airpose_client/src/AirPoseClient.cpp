@@ -426,7 +426,7 @@ namespace airpose_client {
 				step1_pub_.publish(network_data_msg);
 
 				// do this after, since expensive (slow)
-				mat_img_ = cv_bridge::toCvCopy(msgp, "bgr8")->image;
+//				mat_img_ = cv_bridge::toCvCopy(msgp, "bgr8")->image;
 			}
 			catch (std::exception &e) {
 				ROS_WARN("Exception: %s", e.what());
