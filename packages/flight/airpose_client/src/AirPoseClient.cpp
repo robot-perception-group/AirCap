@@ -30,8 +30,8 @@ namespace airpose_client {
 
 			ymin = std::max<int16_t>(ymin_new, 0);
 			xmin = std::max<int16_t>(xmin_new, 0);
-			ymax = std::min<int16_t>(ymax_new, original_resolution.height);
-			xmax = std::min<int16_t>(xmax_new, original_resolution.width);
+			ymax = std::min<int16_t>(ymax_new, original_resolution.height-1);
+			xmax = std::min<int16_t>(xmax_new, original_resolution.width-1);
 		}
 
 		cv::Rect AirPoseClient::get_crop_area(const neural_network_detector::NeuralNetworkFeedback &latest_feedback,
@@ -47,7 +47,7 @@ namespace airpose_client {
 
 			// Clamp the values to resolution
 			int16_t ymin = std::max<int16_t>(latest_feedback.ymin, 0);
-			int16_t ymax = std::min<int16_t>(latest_feedback.ymax, original_resolution.height);
+			int16_t ymax = std::min<int16_t>(latest_feedback.ymax, original_resolution.height-1);
 
 			int16_t xmin = -1;
 			int16_t xmax = -1;
@@ -75,7 +75,7 @@ namespace airpose_client {
 
 				// Compute xmin and xmax, even though xcenter is clamped let's not take risks
 				xmin = std::max<int16_t>((int16_t) (xcenter - half_delta_x), 0);
-				xmax = std::min<int16_t>((int16_t) (xcenter + half_delta_x), original_resolution.width);
+				xmax = std::min<int16_t>((int16_t) (xcenter + half_delta_x), original_resolution.width-1);
 			}
 			if (need_reproj)
 				reproject_coord(xmin, ymin, xmax, ymax, original_resolution);
@@ -331,7 +331,7 @@ namespace airpose_client {
 					latest_feedback_.xcenter = camera_matrix_.at<double>(0,2);
 					latest_feedback_.ycenter = camera_matrix_.at<double>(1,2);
 					latest_feedback_.ymin = 0;
-					latest_feedback_.ymax = local_mat_img_.rows;
+					latest_feedback_.ymax = local_mat_img_.rows-1;
 					
 					crop_area = get_crop_area(latest_feedback_, original_resolution, bx, by, timed_out);
 				}
