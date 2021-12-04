@@ -1,5 +1,6 @@
 import rospy
 import sys
+import os
 import torch
 import numpy as np
 from airpose_client.msg import AirposeNetworkResult
@@ -56,7 +57,9 @@ rospy.init_node("AirPoseViz", anonymous=True)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-smplx = SMPLX("/home/ebonetto/Desktop/smplx",
+
+
+smplx = SMPLX(os.path.join(os.path.dirname(__file__),"smplx_model/smplx"),
                          batch_size=1,
                          create_transl=False).to(device)
 smplx.eval()
