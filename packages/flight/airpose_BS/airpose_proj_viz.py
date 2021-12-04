@@ -13,6 +13,7 @@ from cv_bridge import CvBridge
 from torchvision.utils import make_grid
 import pyrender
 import trimesh
+from airpose_client.msg import AirposeNetworkResult
 
 
 poseTopic = "/"+sys.argv[1]+"/step3_pub"
@@ -179,7 +180,7 @@ def callback(data,image):
 
 
 image_sub = message_filters.Subscriber(imageTopic, Image)
-pose_sub = message_filters.Subscriber(poseTopic, poseInfo)
+pose_sub = message_filters.Subscriber(poseTopic, AirposeNetworkResult)
 ts = message_filters.TimeSynchronizer([image_sub, pose_sub], 10)
 ts.registerCallback(callback)
 
