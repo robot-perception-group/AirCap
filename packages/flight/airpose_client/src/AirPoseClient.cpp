@@ -378,15 +378,9 @@ namespace airpose_client {
 				                   cv::Scalar(0, 0, 0));
 //				cv::imwrite("resized.png", resized);
 
-				if (camera_matrix_.at<double>(0, 2) != -1) {
-					send_data->bx = (float) (bx / camera_matrix_.at<double>(0, 2) - 1);
-					send_data->by = (float) (by / camera_matrix_.at<double>(1, 2) - 1);
-				} else {
-					// fixme or skip frame
-					ROS_INFO_STREAM("Skipping frame, missing camera info");
-					timing_current_stage -= 1;
-					return;
-				}
+				send_data->bx = (float) (bx / airpose_camera_matrix_.at<double>(0, 2) - 1);
+				send_data->by = (float) (by / airpose_camera_matrix_.at<double>(1, 2) - 1);
+
 				send_data->scale = scale;
 				send_data->state = 0;
 //				ROS_INFO_STREAM("Image id " << msgp->header.seq << " feedback id: " << latest_feedback_.header.seq);
