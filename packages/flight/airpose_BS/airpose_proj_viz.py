@@ -13,7 +13,6 @@ from cv_bridge import CvBridge
 from torchvision.utils import make_grid
 import pyrender
 import trimesh
-from airpose_client.msg import AirposeNetworkResult
 
 
 poseTopic = "/"+sys.argv[1]+"/step3_pub"
@@ -171,9 +170,9 @@ def callback(data,image):
                                                 smplx_out.vertices.squeeze(1),
                                                 smplx_out.joints.squeeze(1))
 
-    proj_im = renderer(verts,
-                torch.zeros(batch_size,3,device=self._device).float(),
-                torch.eye(3,device=self._device).float().unsqueeze(0).repeat(batch_size,1,1),
+    proj_img = renderer(verts.cpu().detach().numpy(),
+                torch.zeros(1,3,device=device).float(),
+                torch.eye(3,device=device).float().unsqueeze(0).repeat(1,1,1),
                 br.imgmsg_to_cv2(image))
     
     proj_pub.publish(br.cv2_to_imgmsg(proj_img))
@@ -181,7 +180,7 @@ def callback(data,image):
 
 image_sub = message_filters.Subscriber(imageTopic, Image)
 pose_sub = message_filters.Subscriber(poseTopic, AirposeNetworkResult)
-ts = message_filters.TimeSynchronizer([image_sub, pose_sub], 10)
+ts = message_filters.TimeSynchronizer([pose_sub, image_sub], 10)
 ts.registerCallback(callback)
 
 rospy.spin()
