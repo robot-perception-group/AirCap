@@ -309,6 +309,10 @@ namespace airpose_client {
 						timed_out = true;
 					}
 				}
+				if (timed_out){
+					ROS_WARN_STREAM("Timed out");
+					return;
+				}
 
 //				cv::imwrite("orig.png", local_mat_img_);
 				if (need_reproj) {
