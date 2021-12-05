@@ -150,7 +150,7 @@ smplx = SMPLX("/home/ebonetto/Desktop/smplx/",
                          create_transl=False).to(device)
 smplx.eval()
 
-renderer = Renderer([3428,3429],[2448,2048],[1274,1045],faces=smplx.faces)
+renderer = Renderer([3429,3430],[2448,2048],[1274,1045],faces=smplx.faces)
 
 proj_pub = rospy.Publisher("/"+sys.argv[1]+"/airposeMeshProj", Image, queue_size=10)
 br = CvBridge()
