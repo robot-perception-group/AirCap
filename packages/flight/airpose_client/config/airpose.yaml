@@ -5,8 +5,8 @@ desired_resolution:
 min_area: 50 # this will be squared in the code
 
 timing:
-  camera: 0.16
-  network_stage1: 0.025
+  camera: 0.14
+  network_stage1: 0.0450
   network_stage2: 0.0025
   network_stage3: 0.0025
   communication_stage1: 0.025
