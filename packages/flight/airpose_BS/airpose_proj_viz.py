@@ -90,7 +90,11 @@ class Renderer:
             metallicFactor=0.2,
             alphaMode='OPAQUE',
             baseColorFactor=color)
+<<<<<<< HEAD
         # import ipdb; ipdb.set_trace()
+=======
+
+>>>>>>> airpose
         mesh = trimesh.Trimesh(vertices, self.faces)
         # perp = np.cross(np.array([0,0,1]),camera_translation)
         rot = trimesh.transformations.rotation_matrix(
@@ -130,7 +134,10 @@ class Renderer:
 
 
         color, rend_depth = self.renderer.render(scene, flags=pyrender.RenderFlags.RGBA)
+<<<<<<< HEAD
 
+=======
+>>>>>>> airpose
         color = color.astype(np.float32) / 255.0
         valid_mask = (rend_depth > 0)[:,:,None]
         output_img = (color[:, :, :3] * valid_mask +
@@ -145,19 +152,31 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 
+<<<<<<< HEAD
 smplx = SMPLX("/home/ebonetto/Desktop/smplx/",
+=======
+smplx = SMPLX(os.path.join(os.path.dirname(__file__),"smplx_model/smplx"),
+>>>>>>> airpose
                          batch_size=1,
                          create_transl=False).to(device)
 smplx.eval()
 
+<<<<<<< HEAD
 renderer = Renderer([3429,3430],[2448,2048],[1274,1045],faces=smplx.faces)
+=======
+renderer = Renderer([3428,3429],[2448,2048],[1274,1045])
+>>>>>>> airpose
 
 proj_pub = rospy.Publisher("/"+sys.argv[1]+"/airposeMeshProj", Image, queue_size=10)
 br = CvBridge()
 
 def callback(data,image):
     betas = torch.from_numpy(np.array(data.data[:10])).to(device).float().unsqueeze(0)
+<<<<<<< HEAD
     trans = torch.from_numpy(np.array(data.data[10:13])).to(device).float().unsqueeze(0)*20
+=======
+    trans = torch.from_numpy(np.array(data.data[10:13])).to(device).float().unsqueeze(0)
+>>>>>>> airpose
     pose = rot6d_to_rotmat(torch.from_numpy(np.array(data.data[13:])).to(device).float()).unsqueeze(0)
 
     smplx_out = smplx.forward(betas=betas, 
@@ -170,6 +189,7 @@ def callback(data,image):
     verts,joints,_,_ = transform_smpl(transf_mat0,
                                                 smplx_out.vertices.squeeze(1),
                                                 smplx_out.joints.squeeze(1))
+<<<<<<< HEAD
     # import ipdb;ipdb.set_trace()
     proj_img = renderer(verts[0].cpu().detach().numpy(),
                 np.zeros([1,3]),
@@ -185,3 +205,20 @@ ts = message_filters.TimeSynchronizer([pose_sub, image_sub], 10000)
 ts.registerCallback(callback)
 
 rospy.spin()
+=======
+
+    proj_im = renderer(verts,
+                torch.zeros(batch_size,3,device=self._device).float(),
+                torch.eye(3,device=self._device).float().unsqueeze(0).repeat(batch_size,1,1),
+                br.imgmsg_to_cv2(image))
+    
+    proj_pub.publish(br.cv2_to_imgmsg(proj_img))
+
+
+image_sub = message_filters.Subscriber(imageTopic, Image)
+pose_sub = message_filters.Subscriber(poseTopic, poseInfo)
+ts = message_filters.TimeSynchronizer([image_sub, pose_sub], 10)
+ts.registerCallback(callback)
+
+rospy.spin()
+>>>>>>> airpose
