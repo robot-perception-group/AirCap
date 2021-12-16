@@ -196,7 +196,7 @@ def callback(data,image):
                 np.eye(3).reshape(1,3,3),
                 br.imgmsg_to_cv2(image))
     proj_img = proj_img.astype(np.uint8)
-    proj_pub.publish(br.cv2_to_imgmsg(proj_img, "rgb8"))
+    proj_pub.publish(br.cv2_to_imgmsg(proj_img, "bgr8"))
 
 
 image_sub = message_filters.Subscriber(imageTopic, Image)
