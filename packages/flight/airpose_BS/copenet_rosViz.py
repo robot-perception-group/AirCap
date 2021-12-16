@@ -59,7 +59,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 
-smplx = SMPLX(os.path.join(os.path.dirname(__file__),"smplx_model/smplx"),
+smplx = SMPLX(sys.argv[2],
                          batch_size=1,
                          create_transl=False).to(device)
 smplx.eval()
