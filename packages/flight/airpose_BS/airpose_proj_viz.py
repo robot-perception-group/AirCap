@@ -21,24 +21,24 @@ imageTopic = "/"+sys.argv[1]+"/video"
 ##############################################
 
 def transform_smpl(trans_mat,smplvertices=None,smpljoints=None, orientation=None, smpltrans=None):
-    verts =  torch.bmm(trans_mat[:,:3,:3],smplvertices.permute(0,2,1)).permute(0,2,1) +\
-                    trans_mat[:,:3,3].unsqueeze(1)
+    verts =  torch.bmm(trans_mat[:,:3,:3],smplvertices.permute(0,2,1)).permute(0,2,1) + \
+             trans_mat[:,:3,3].unsqueeze(1)
     if smpljoints is not None:
-        joints = torch.bmm(trans_mat[:,:3,:3],smpljoints.permute(0,2,1)).permute(0,2,1) +\
-                         trans_mat[:,:3,3].unsqueeze(1)
+        joints = torch.bmm(trans_mat[:,:3,:3],smpljoints.permute(0,2,1)).permute(0,2,1) + \
+                 trans_mat[:,:3,3].unsqueeze(1)
     else:
         joints = None
-    
+
     if smpltrans is not None:
-        trans = torch.bmm(trans_mat[:,:3,:3],smpltrans.unsqueeze(2)).squeeze(2) +\
-                         trans_mat[:,:3,3]
+        trans = torch.bmm(trans_mat[:,:3,:3],smpltrans.unsqueeze(2)).squeeze(2) + \
+                trans_mat[:,:3,3]
     else:
         trans = None
 
     if orientation is not None:
         orient = torch.bmm(trans_mat[:,:3,:3],orientation)
     else:
-        orient = None    
+        orient = None
     return verts, joints, orient, trans
 
 def rot6d_to_rotmat(x):
@@ -64,14 +64,14 @@ class Renderer:
     """
     def __init__(self, focal_length=[1475,1475], img_res=[224,224], center = [112,112], faces=None):
         self.renderer = pyrender.OffscreenRenderer(viewport_width=img_res[0],
-                                       viewport_height=img_res[1],
-                                       point_size=1.0)
+                                                   viewport_height=img_res[1],
+                                                   point_size=1.0)
         self.focal_length = focal_length
         self.camera_center = center
         self.faces = faces
 
     def visualize_tb(self, vertices, camera_translation,camera_rotation, images,nrow=5,color=(0.3, 0.3, 0.8, 1.0)):
-        
+
         vertices = vertices.cpu().numpy()
         camera_translation = camera_translation.cpu().numpy()
         camera_rotation = camera_rotation.cpu().numpy()
@@ -111,9 +111,9 @@ class Renderer:
         # camera_pose[:3,:3] = camera_rotation
         # camera_pose = np.matmul(rot,camera_pose)
         # camera_pose[:3, 3] = camera_translation
-        
+
         self.camera = pyrender.IntrinsicsCamera(fx=self.focal_length[0], fy=self.focal_length[1],
-                                           cx=self.camera_center[0], cy=self.camera_center[1])
+                                                cx=self.camera_center[0], cy=self.camera_center[1])
         scene.add(self.camera, pose=np.eye(4))
 
         light = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=1)
@@ -134,7 +134,7 @@ class Renderer:
         color = color.astype(np.float32) / 255.0
         valid_mask = (rend_depth > 0)[:,:,None]
         output_img = (color[:, :, :3] * valid_mask +
-                  (1 - valid_mask) * image)
+                      (1 - valid_mask) * image)
         return output_img
 
 #################################################
@@ -160,23 +160,23 @@ def callback(data,image):
     trans = torch.from_numpy(np.array(data.data[10:13])).to(device).float().unsqueeze(0)*20
     pose = rot6d_to_rotmat(torch.from_numpy(np.array(data.data[13:])).to(device).float()).unsqueeze(0)
 
-    smplx_out = smplx.forward(betas=betas, 
-                                body_pose=pose[:,1:],
-                                global_orient=torch.eye(3,device=device).float().unsqueeze(0).unsqueeze(1),
-                                transl = torch.zeros(1,3).float().type_as(betas),
-                                pose2rot=False)
+    smplx_out = smplx.forward(betas=betas,
+                              body_pose=pose[:,1:],
+                              global_orient=torch.eye(3,device=device).float().unsqueeze(0).unsqueeze(1),
+                              transl = torch.zeros(1,3).float().type_as(betas),
+                              pose2rot=False)
     transf_mat0 = torch.cat([pose[:,:1].squeeze(1),
-                                trans.unsqueeze(2)],dim=2)
+                             trans.unsqueeze(2)],dim=2)
     verts,joints,_,_ = transform_smpl(transf_mat0,
-                                                smplx_out.vertices.squeeze(1),
-                                                smplx_out.joints.squeeze(1))
+                                      smplx_out.vertices.squeeze(1),
+                                      smplx_out.joints.squeeze(1))
     # import ipdb;ipdb.set_trace()
     proj_img = renderer(verts[0].cpu().detach().numpy(),
-                np.zeros([1,3]),
-                np.eye(3).reshape(1,3,3),
-                br.imgmsg_to_cv2(image))
+                        np.zeros([1,3]),
+                        np.eye(3).reshape(1,3,3),
+                        br.imgmsg_to_cv2(image))
     proj_img = proj_img.astype(np.uint8)
-    proj_pub.publish(br.cv2_to_imgmsg(proj_img, "rgb8"))
+    proj_pub.publish(br.cv2_to_imgmsg(proj_img, "bgr8"))
 
 
 image_sub = message_filters.Subscriber(imageTopic, Image)
