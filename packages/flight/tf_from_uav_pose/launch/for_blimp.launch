@@ -31,8 +31,9 @@
             <param if="$(arg cameraStaticPublish)" name="cameraStaticPublish/topic" value="camera/pose"/>
             <param if="$(arg cameraStaticPublish)" name="cameraStaticPublish/publish" value="true" type="bool"/>
             <!-- tx, ty, tz, qx, qy, qz, qw-->
-            <!--<rosparam if="$(arg cameraStaticPublish)" param="cameraStaticPublish/TFParameters">[0.18, 0.0, -0.07, -0.271, -0.271, 0.653, 0.653]</rosparam>-->
-            <rosparam if="$(arg cameraStaticPublish)" param="cameraStaticPublish/TFParameters">[2.31, 0.0, 2.12, 0.271, -0.271, 0.653, 0.653]</rosparam>
+            <!--<rosparam if="$(arg cameraStaticPublish)" param="cameraStaticPublish/TFParameters">[0.18, 0.0, -0.07, -0.271, -0.271, 0.653, 0.653]</rosparam>--><!--wrong-->
+            <!--<rosparam if="$(arg cameraStaticPublish)" param="cameraStaticPublish/TFParameters">[2.31, 0.0, 2.12, 0.271, -0.271, 0.653, 0.653]</rosparam>--><!-- 90 deg right,45 deg down-->
+            <rosparam if="$(arg cameraStaticPublish)" param="cameraStaticPublish/TFParameters">[2.31, 0.0, 2.12, 0.183, -0.183, 0.683, 0.683]</rosparam><!-- 90 deg right, 30 deg down -->
             <param name="dontPublishTFs" value="$(arg dontPublishTFs)" type="bool"/>
 
             <param name="offsetX" value="$(arg offsetX)" type="double"/>
