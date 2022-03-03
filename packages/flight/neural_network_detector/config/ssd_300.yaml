@@ -3,7 +3,7 @@ desired_resolution:
   y: 300
 
 score_threshold: 0.3
-desired_class: 15
+desired_class: 1
 aspect_ratio: 1.333333333
 
 variance:

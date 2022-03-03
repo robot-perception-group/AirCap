@@ -1,5 +1,5 @@
 #!/bin/bash
-
+exit
 cd ~/src/caffe
 id=$1
 port=$(( 9900+id ))
