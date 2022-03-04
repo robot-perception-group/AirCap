@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<launch>
+
+    <arg name="robotID" default="1" />
+    <arg name="numRobots" default="1" />
+    <arg name="gpuHost" default="localhost" />
+    <arg name="gpuPort" default="9900" />
+    <arg name="rvizView" default="false" />
+    <arg name="addOffset" default="false"/>
+    <arg name="addCovariance" default="true"/>
+    <arg name="max_update_force" default="false"/>
+    <arg name="max_update_rate" default="4"/>
+    <arg name="comSuccessRate" default="100"/>
+    <arg name="X" default="0.0"/>
+    <arg name="Y" default="0.0"/>
+    <arg name="Z" default="1.0"/>
+
+
+    <include file="$(find target_tracker_distributed_kf)/launch/tracker.launch">
+	      <arg name="robotID" value="$(arg robotID)" />
+	      <arg name="numRobots" value="$(arg numRobots)" />
+        <arg name="measurement_topic_suffix" default="object_detections/projected_to_world_network"/>
+    </include>
+
+    <include file="$(find tf_from_uav_pose)/launch/for_webcam.launch">
+        <arg name="robotID" value="$(arg robotID)" />
+    </include>
+
+    <include file="$(find model_distance_from_height)/launch/cup_detection.launch">
+        <arg name="robotID" value="$(arg robotID)" />
+    </include>
+
+    <include file="$(find neural_network_detector)/launch/one_robot.launch">
+        <arg name="robotID" value="$(arg robotID)" />
+        <arg name="host" value="$(arg gpuHost)"/>
+	<arg name="port" value="$(arg gpuPort)"/>
+	<arg name="network_model" value="ssd_300_cup.yaml" />
+	<!--<arg name="img_topic" value="/machine_$(arg robotID)/xtion/rgb/image_raw"/>-->
+        <!--<arg name="img_topic" value="video"/>-->
+	<arg name="max_update_force" value="$(arg max_update_force)"/>
+	<arg name="max_update_rate" value="$(arg max_update_rate)" />
+	<!--arg name="feedback_topic" value="dummy" /-->  <!--remove after use-->
+    </include>
+
+    <include file="$(find camera_configs)/launch/webcam.launch">
+        <arg name="robotID" value="$(arg robotID)" />
+    </include>
+
+    <include file="$(find fake_position)/launch/default.launch">
+        <arg name="robotID" value="$(arg robotID)" />
+</include>
+
+</launch>
