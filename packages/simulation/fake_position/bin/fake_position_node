@@ -1,0 +1,66 @@
+#!/usr/bin/python
+
+import random
+import math
+import rospy
+import message_filters
+import os
+#import cv2
+import tf
+import sys
+from geometry_msgs.msg import PoseWithCovarianceStamped, Pose, PoseStamped
+from uav_msgs.msg import uav_pose
+
+rawtopic="pose/raw"
+posetopic="pose"
+
+
+rospy.init_node("fake_position_node", log_level=rospy.INFO)
+#bridge=CvBridge()
+
+sequence =0
+lasttime=rospy.Time.now()
+
+
+def posepublish():
+  global sequence
+  global lasttime
+
+  uavpose = uav_pose()
+  uavpose.header.seq=sequence
+  sequence+=1
+  uavpose.header.stamp=rospy.Time.now()
+  uavpose.header.frame_id="world"
+  uavpose.position.x=0.01
+  uavpose.position.y=0.01
+  uavpose.position.z=0.01
+
+  uavpose.orientation.x=0.0001
+  uavpose.orientation.y=0.0001
+  uavpose.orientation.z=0.0001
+  uavpose.orientation.w=0.9999
+  uavpose.velocity.x=0.0
+  uavpose.velocity.y=0.0
+  uavpose.velocity.z=0.0
+  uavpose.POI=uavpose.velocity
+  uavpose.angVelocity=uavpose.velocity
+  uavpose.flightmode=0
+  uavpose.thrust=0.0
+  uavpose.covariance= [0.0]*(100)
+
+  raw_pub.publish(uavpose)
+
+  pose_pub.publish(uavpose)
+
+rospy.loginfo("startup")
+
+pose_pub = rospy.Publisher(posetopic,uav_pose, queue_size=3)
+raw_pub = rospy.Publisher(rawtopic,uav_pose, queue_size=3)
+rospy.loginfo("registered subscribers and publishers")
+
+rospy.loginfo("fakesubscriber_initialized")
+r = rospy.Rate(100.)
+while not rospy.is_shutdown():
+    r.sleep()
+    posepublish()
+
