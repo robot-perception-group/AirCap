@@ -13,6 +13,7 @@ NAME=$4
 WORLD=$5
 
 
+
 if [ -z "$COMSUCCESSRATE" ]; then
    COMSUCCESSRATE=100
 fi
@@ -30,18 +31,18 @@ HUMAN_INPUT="[1"
 
 Xs=( -15 -10 8 6 -4  0 4 -6 -8 10 15)
 Ys=( -15 10 -8 6 -4  0 -4 6 -8 10 -15)
-# LOGPATH="/media/ssd/RECORD"
+LOGPATH="~/sim_experiments/"
 
 if [ $# -lt 2 ]; then
         echo "usage: $0 <number of quadcopters> <number of blimps> <communication success rate> <experiment title> <world_name>"
         exit 1
 fi
 
-# LOGFILE=$( echo ${LOGPATH}/${NAME}*.bag )
-# if [ -e $LOGFILE ]; then
-# 	echo Experiment result exists, exiting
-# 	exit 0
-# fi
+LOGFILE=$( echo ${LOGPATH}/${NAME}*.bag )
+if [ -e $LOGFILE ]; then
+	echo Experiment result exists, exiting
+	exit 0
+fi
 
 echo "Launching Gazebo..."
 screen -d -m -S GAZEBO bash -i -c "roslaunch rotors_gazebo world.launch world_name:=$WORLD --screen"
@@ -64,11 +65,6 @@ echo "Starting GCS Visualization framework..."
 screen -d -m -S GCSVIS bash -i -c "rosrun gcs_visualization gcs_visualization_node $ROBOS 30 1 0 arrow 8"
 
 sleep 3
-
-#spawn target
-echo "Spawning target"
-screen -d -m -S TARGET bash -i -c "roslaunch random_moving_target spawn_target_withID.launch joyDevName:=0 directUseForFormation:=true --screen"
-
 
 
 for i in $(seq 0 $(($QUADS-1))); do
@@ -118,8 +114,8 @@ done
 
 
 # wait 30 seconds for robots to assume position
-# echo "Waiting 20 seconds for everyone to come up"
-# timeout 400 ./rossleep.py 20
+echo "Waiting 20 seconds for everyone to come up"
+timeout 400 ./rossleep.py 20
 
 # check robot status
 echo "Checking robot status"
@@ -142,27 +138,21 @@ for i in $(seq 0 $(($ROBOS-1))); do
 		break
 	fi
 	# all robots need to be
-	if [ ! \( $( echo "$z<-3.0" |bc ) = 1 -a $( echo "$z>-20.0" |bc ) = 1 \) ]; then
-		result=0;
-		break
-	fi
-	if [ ! \( $( echo "$x>-20.0" |bc ) = 1 -a $( echo "$x<20.0" |bc ) = 1 \) ]; then
-		result=0;
-		break
-	fi
-	if [ ! \( $( echo "$x>-20.0" |bc ) = 1 -a $( echo "$x<20.0" |bc ) = 1 \) ]; then
+	if [ ! \( $( echo "$z<-3.0" |bc ) = 1 -a $( echo "$z>-50.0" |bc ) = 1 \) ]; then
 		result=0;
 		break
 	fi
 done
 # indicate failure if checks don't match
-# if [ $result = 0 ]; then
-# 	echo "Robot $i failed to initialize - cleaning up"
-# 	#./cleanup.sh
-# 	#exit 1
-# fi
+if [ $result = 0 ]; then
+	echo "Robot $i failed to initialize - cleaning up"
+	./cleanup.sh
+	exit 1
+fi
 
-
+#spawn target
+echo "Spawning target"
+screen -d -m -S TARGET bash -i -c "roslaunch random_moving_target spawn_target_withID.launch joyDevName:=0 directUseForFormation:=true --screen"
 
 echo "Waiting 20 seconds for everyone to come up"
 timeout 400 ./rossleep.py 20
@@ -173,11 +163,22 @@ if [ $result = 124 ]; then
 	exit 1
 fi
 
+#start logs
+echo "Starting recording..."
+echo screen -d -m -S ROSBAG bash -i -c "rosbag record -o ${LOGPATH}/${NAME}.bag $( cat bagtopics.txt | tr '\n' ' ' )"
+screen -d -m -S ROSBAG bash -i -c "rosbag record -o ${LOGPATH}/${NAME}.bag $( cat bagtopics.txt | tr '\n' ' ' )"
 
-# #start logs
-# echo "Starting recording..."
-# echo screen -d -m -S ROSBAG bash -i -c "rosbag record -o ${LOGPATH}/${NAME}.bag $( cat bagtopics.txt | tr '\n' ' ' )"
-# screen -d -m -S ROSBAG bash -i -c "rosbag record -o ${LOGPATH}/${NAME}.bag $( cat bagtopics.txt | tr '\n' ' ' )"
+# let the experiment run for 240 (simulated) seconds
+echo "Running experiment for 240 seconds"
+./rossleep.py 240
 
+#sleep 10 
+	#roslaunch mavocap_flyto formation_master.launch robotIDs:=$ROBOT_IDS"]"  humanInput:=$HUMAN_INPUT"]" --screen &
+
+# start octomap server
+# roslaunch hkt_experiments octomap_mapping.launch --screen 
+# get the current time
+echo "Done, cleaning up"
+./cleanup.sh
 date
 exit 0
