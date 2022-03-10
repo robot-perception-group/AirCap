@@ -34,6 +34,7 @@ namespace tf_from_uav_pose {
         ros::Publisher stdPosePub_;
         ros::Publisher stdRawPosePub_;
         ros::Publisher throttledPosePub_;
+        ros::Publisher throttledUAVPosePub_;
         std::unique_ptr<ros::Publisher> cameraPosePub_, camRGBPosePub_;
         std::unique_ptr<tf2_ros::TransformBroadcaster> tfBroadcaster_;
         std::unique_ptr<tf2_ros::StaticTransformBroadcaster> statictfBroadcaster_;

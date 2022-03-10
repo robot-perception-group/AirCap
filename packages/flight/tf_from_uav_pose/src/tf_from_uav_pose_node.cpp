@@ -22,6 +22,7 @@ tfFromUAVPose::tfFromUAVPose() {
             stdPoseTopicName{"pose/corr/std"},
             stdRawPoseTopicName{"pose/raww/std"},
             throttledPoseTopicName{"throttledPose"},
+            throttledUAVPoseTopicName{"throttledUAVPose"},
             machineFrameID{"machine_1_base_link"},
             worldFrameID{"world"},
             worldENUFrameID{"world_ENU"},
@@ -30,11 +31,12 @@ tfFromUAVPose::tfFromUAVPose() {
             cameraRGBOpticalFrameID{"cameraRGBOpticalFrameID"};
 
     // Parameters, with some default values
-    pnh_.getParam("poseTopicName", poseTopicName);
+    pnh_.getParam("ooseTopicName", poseTopicName);
     pnh_.getParam("rawPoseTopicName", rawPoseTopicName);
     pnh_.getParam("stdPoseTopicName", stdPoseTopicName);
     pnh_.getParam("stdRawPoseTopicName", stdRawPoseTopicName);
     pnh_.getParam("throttledPoseTopicName", throttledPoseTopicName);
+    pnh_.getParam("throttledUAVPoseTopicName", throttledUAVPoseTopicName);
     pnh_.getParam("machineFrameID", machineFrameID);
     pnh_.getParam("worldFrameID", worldFrameID);
     pnh_.getParam("worldENUFrameID", worldENUFrameID);
@@ -177,6 +179,7 @@ tfFromUAVPose::tfFromUAVPose() {
     throttledPose_.header.frame_id = worldFrameID;
     throttledPose_.header.stamp = ros::Time::now();
     throttledPosePub_ = nh_.advertise<geometry_msgs::PoseStamped>(throttledPoseTopicName, 10);
+    throttledUAVPosePub_ = nh_.advertise<uav_msgs::uav_pose>(throttledUAVPoseTopicName, 10);
 
     // Subscribe to poses
     poseSub_ = nh_.subscribe(poseTopicName, 10, &tfFromUAVPose::poseCallback, this);
@@ -221,6 +224,7 @@ void tfFromUAVPose::poseCallback(const uav_msgs::uav_pose::ConstPtr &msg) {
 
         // Publish throttle pose msg
         throttledPosePub_.publish(throttledPose_);
+	throttledUAVPosePub_.publish(msg);
     }
 
     // Copy contents to tf msgs
