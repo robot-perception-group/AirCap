@@ -181,8 +181,6 @@ add_dependencies(${PROJECT_NAME}_node ${PROJECT_NAME}_gencfg)
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   ${MRPT_LIBRARIES}
-  mrpt-poses
-  mrpt-ros1bridge
 )
 
 #############
