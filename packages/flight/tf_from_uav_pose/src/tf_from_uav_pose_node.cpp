@@ -10,7 +10,7 @@
 //#include <mrpt/math.h>
 #include <mrpt/poses/CPose3DQuatPDFGaussian.h>
 #include <mrpt/poses/CPose3DPDFGaussian.h>
-#include <mrpt_bridge/mrpt_bridge.h>
+#include <mrpt/ros1bridge/pose.h>
 
 namespace tf_from_uav_pose {
 
@@ -333,7 +333,8 @@ void uavCovariance_to_rosCovariance(const uav_msgs::uav_pose::ConstPtr &uav_msg,
                                       intermediate);
 
     CPose3DPDFGaussian mrpt_pose6(mrpt_pose7);
-    mrpt_bridge::convert(mrpt_pose6, std_pose_cov);
+    //mrpt_bridge::convert(mrpt_pose6, std_pose_cov); /* mrpt bridge no longer exists, replaced by: */
+    std_pose_cov = mrpt::ros1bridge::toROS_Pose(mrpt_pose6);
 }
 
 }

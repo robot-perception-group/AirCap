@@ -29,7 +29,7 @@ endif()
 
 # This flag is used so that we don't have "no debug" issues
 set(MRPT_DONT_USE_DBG_LIBS 1)
-find_package(MRPT 1.5 REQUIRED COMPONENTS base maps )
+find_package(MRPT 1.5 REQUIRED poses ros1bridge )
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -39,7 +39,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   uav_msgs
   geometry_msgs
-  mrpt_bridge
   dynamic_reconfigure
 )
 
