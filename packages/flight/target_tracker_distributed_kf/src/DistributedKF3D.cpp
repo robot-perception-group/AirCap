@@ -3,7 +3,6 @@
 //
 
 #include <mrpt/math/distributions.h>
-#include <mrpt_bridge/mrpt_bridge.h>
 #include <target_tracker_distributed_kf/DistributedKF3D.h>
 #include <ros/callback_queue.h>
 #include <cmath>

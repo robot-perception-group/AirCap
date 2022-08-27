@@ -1,7 +1,3 @@
-[submodule "packages/3rdparty/mrpt_bridge"]
-	path = packages/3rdparty/mrpt_bridge
-	url = https://github.com/mrpt-ros-pkg/mrpt_bridge.git
-	branch = ros1
 [submodule "packages/3rdparty/pose_cov_ops"]
 	path = packages/3rdparty/pose_cov_ops
 	url = https://github.com/mrpt-ros-pkg/pose_cov_ops.git

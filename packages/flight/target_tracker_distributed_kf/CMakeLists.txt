@@ -51,7 +51,6 @@ FIND_PACKAGE(catkin REQUIRED COMPONENTS
   std_msgs
   roscpp
   pose_cov_ops
-  mrpt_bridge
   dynamic_reconfigure
   uav_msgs
   )
