@@ -6,3 +6,7 @@
 	path = packages/3rdparty/rviz_plugin_covariance
 	url = https://github.com/laas/rviz_plugin_covariance.git
 	branch = master
+[submodule "packages/3rdparty/airship_simulation"]
+	path = packages/3rdparty/airship_simulation
+	url = https://github.com/robot-perception-group/airship_simulation.git
+	branch = noetic
