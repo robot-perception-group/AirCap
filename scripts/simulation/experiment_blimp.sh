@@ -31,7 +31,7 @@ HUMAN_INPUT="[1"
 
 Xs=( -15 -10 8 6 -4  0 4 -6 -8 10 15)
 Ys=( -15 10 -8 6 -4  0 -4 6 -8 10 -15)
-LOGPATH="~/sim_experiments/"
+LOGPATH="$( echo ~/sim_experiments )"
 
 if [ $# -lt 2 ]; then
         echo "usage: $0 <number of quadcopters> <number of blimps> <communication success rate> <experiment title> <world_name>"
@@ -45,6 +45,8 @@ if [ -e $LOGFILE ]; then
 fi
 
 echo "Launching Gazebo..."
+#mkdir ${LOGPATH}/${NAME}.gazebolog
+#screen -d -m -S GAZEBO bash -i -c "roslaunch rotors_gazebo world.launch world_name:=$WORLD extra_gazebo_args:='-r --record_path ${LOGPATH}/${NAME}.gazebolog' --screen"
 screen -d -m -S GAZEBO bash -i -c "roslaunch rotors_gazebo world.launch world_name:=$WORLD --screen"
 
 #roslaunch rotors_gazebo world.launch world_name:=arena_HKT_2 --screen &
