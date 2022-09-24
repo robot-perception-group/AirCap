@@ -9,4 +9,4 @@
 [submodule "packages/3rdparty/airship_simulation"]
 	path = packages/3rdparty/airship_simulation
 	url = https://github.com/robot-perception-group/airship_simulation.git
-	branch = noetic
+	branch = mpc-test
